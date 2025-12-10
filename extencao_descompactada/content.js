@@ -673,6 +673,9 @@ function showPricingOverlay(data) {
 
 function sendDone(name, status, downloadUrl, err, meta = {}) {
   try {
+    // CRITICAL: Stop keep-alive pings before sending done message
+    stopKeepAlive();
+
     clearResumeFlag();
 
     log('[sendDone]', name, status, 'position:', meta?.position, 'total:', meta?.total);
@@ -688,9 +691,6 @@ function sendDone(name, status, downloadUrl, err, meta = {}) {
       } else {
         log('[sendDone] Success, response:', response);
       }
-
-      // CRITICAL: Stop keep-alive pings AFTER message is sent
-      stopKeepAlive();
     });
 
     // Marca overlay como completo se for o último arquivo
@@ -700,8 +700,6 @@ function sendDone(name, status, downloadUrl, err, meta = {}) {
     hideOverlay();
   } catch (e) {
     log('[sendDone] error', e);
-    // Stop keep-alive on error too
-    stopKeepAlive();
   }
 }
 

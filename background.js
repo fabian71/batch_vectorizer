@@ -84,12 +84,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return;
   }
   if (msg.type === 'poc:done') {
+    console.log('[background] ========== POC:DONE RECEIVED ==========');
     console.log('[background] Received poc:done for:', msg.result?.name, 'status:', msg.result?.status);
     console.log('[background] Current queue length:', queue.length, 'isRunning:', isRunning, 'isPaused:', isPaused);
+    console.log('[background] Queue items:', queue.map(q => `${q.name}:${q.status}`));
+
+    // CRITICAL: Send response IMMEDIATELY to keep port open
+    sendResponse?.({ received: true, timestamp: Date.now() });
+
     markDone(msg.result);
     console.log('[background] After markDone - isRunning:', isRunning, 'isPaused:', isPaused);
-    sendResponse?.();
-    return; // kick handled after optional delay
+    console.log('[background] ========== POC:DONE PROCESSED ==========');
+    return true; // Keep message channel open for async response
   }
   if (msg.type === 'queue:get') {
     sendResponse?.({
