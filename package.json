@@ -1,0 +1,16 @@
+{
+  "name": "batch-vectorizer",
+  "version": "1.0.0",
+  "description": "**Batch Vectorizer - Unofficial Tool** is a powerful browser extension designed to automate the process of vectorizing images using [Vectorizer.ai](https://vectorizer.ai/). It allows you to queue multiple images, process them automatically, and download the results in your preferred format, all while managing processing intervals to avoid rate limits.",
+  "main": "background.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "javascript-obfuscator": "^5.0.1"
+  }
+}

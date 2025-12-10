@@ -1,0 +1,41 @@
+<div class="modal-dialog modal-sm">
+<div class="modal-content">
+<div class="modal-body">
+<div id="App-Progress-Pane">
+
+<table>
+<tbody><tr id="App-Progress-Upload-Pane" class="App-Progress-progress">
+<td style="font-weight: 500;">Upload</td>
+<td>
+<div class="progress">
+<div id="App-Progress-Upload-Bar" class="progress-bar App-Progress-bar" style="width: 100%;">
+</div>
+</div>
+</td>
+</tr>
+<tr id="App-Progress-Process-Pane" class="App-Progress-progress">
+<td style="font-weight: 500;">Processamento</td>
+<td>
+<div class="progress">
+<div id="App-Progress-Process-Bar" class="progress-bar App-Progress-bar active" style="width: 43.57%;">
+</div>
+</div>
+</td>
+</tr>
+<tr id="App-Progress-Download-Pane" class="App-Progress-progress">
+<td style="font-weight: 500;">Recuperar</td>
+<td>
+<div class="progress">
+<div id="App-Progress-Download-Bar" class="progress-bar App-Progress-bar" style="width: 0%;">
+</div>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="modal-footer">
+<button style="float: right;" data-dismiss="modal" class="bttn bttn_red App-cancel_upload">Cancelar</button>
+</div>
+</div>
+</div>
