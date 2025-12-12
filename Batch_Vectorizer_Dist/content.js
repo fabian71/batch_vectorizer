@@ -852,7 +852,7 @@ function showOverlay(item, meta) {
       thumbEl.style.backgroundImage = `url("${url}")`;
       thumbEl.style.display = 'block';
     } else if (thumbEl) {
-      // Esconde thumbnail quando não há dados
+      // Esconde thumbnail quando nao ha dados
       thumbEl.style.display = 'none';
     }
 

@@ -403,6 +403,37 @@
       transform: none;
     }
 
+    .primary-btn.loading {
+      position: relative;
+      pointer-events: none;
+      opacity: 0.85;
+    }
+
+    .primary-btn.loading .btn-text {
+      opacity: 0;
+    }
+
+    .primary-btn.loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      left: 50%;
+      margin-left: -10px;
+      margin-top: -10px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .control-buttons {
       display: flex;
       gap: 10px;
@@ -732,7 +763,8 @@
 
     <!-- Action Buttons -->
     <div class="action-buttons">
-      <button id="start" class="primary-btn" data-i18n="start">🚀 Start vectorization</button>
+      <button id="start" class="primary-btn"><span class="btn-text" data-i18n="start">🚀 Start
+          vectorization</span></button>
       <div class="control-buttons">
         <button id="pauseBtn" class="control-btn pause" disabled data-i18n="pause">⏸ Pause</button>
         <button id="cancelBtn" class="control-btn cancel" disabled data-i18n="cancel">✕ Cancel</button>

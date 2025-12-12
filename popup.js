@@ -97,7 +97,8 @@ function applyTranslations() {
   }
 
   // Update buttons
-  startBtn.innerHTML = `🚀 ${t('start')}`;
+  const startBtnText = startBtn.querySelector('.btn-text');
+  if (startBtnText) startBtnText.textContent = `🚀 ${t('start')}`;
   pauseBtn.textContent = isPaused ? `▶ ${t('resume')}` : `⏸ ${t('pause')}`;
   cancelBtn.textContent = `✕ ${t('cancel')}`;
 
@@ -275,6 +276,11 @@ if (infoBtn && infoModal && closeModal) {
   };
 }
 
+// Maximum file size limits (to avoid Chrome 64MB message serialization limit)
+// Byte arrays expand ~4x when serialized to JSON, so keep limits conservative
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB per file
+const MAX_TOTAL_SIZE = 12 * 1024 * 1024; // 12MB total
+
 startBtn.onclick = async () => {
   if (!files.length) return;
 
@@ -288,24 +294,58 @@ startBtn.onclick = async () => {
     return;
   }
 
-  const payload = await Promise.all(files.map(async f => {
-    const data = Array.from(new Uint8Array(await f.arrayBuffer()));
+  // Check for files that are too large
+  const oversizedFiles = files.filter(f => f.size > MAX_FILE_SIZE);
+  if (oversizedFiles.length > 0) {
+    const fileNames = oversizedFiles.map(f => `${f.name} (${Math.round(f.size / 1024 / 1024)}MB)`).join(', ');
+    showFileSizeError(fileNames);
+    return;
+  }
 
-    // Extract image dimensions
-    const dimensions = await getImageDimensions(f);
+  // Check total payload size
+  const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+  if (totalSize > MAX_TOTAL_SIZE) {
+    showTotalSizeError(Math.round(totalSize / 1024 / 1024));
+    return;
+  }
 
-    return {
-      name: f.name,
-      type: f.type,
-      size: f.size,
-      data,
-      width: dimensions.width,
-      height: dimensions.height
-    };
-  }));
-  chrome.runtime.sendMessage({ type: 'queue:add', items: payload });
-  files = [];
-  renderLocalSelection();
+  // Show loading animation
+  startBtn.classList.add('loading');
+  startBtn.disabled = true;
+
+  try {
+    const payload = await Promise.all(files.map(async f => {
+      // Original method: byte array
+      const data = Array.from(new Uint8Array(await f.arrayBuffer()));
+
+      // Extract image dimensions
+      const dimensions = await getImageDimensions(f);
+
+      return {
+        name: f.name,
+        type: f.type,
+        size: f.size,
+        data,
+        width: dimensions.width,
+        height: dimensions.height
+      };
+    }));
+
+    chrome.runtime.sendMessage({ type: 'queue:add', items: payload });
+    files = [];
+    renderLocalSelection();
+
+    // Brief success indication before removing loading
+    setTimeout(() => {
+      startBtn.classList.remove('loading');
+      startBtn.disabled = false;
+    }, 500);
+  } catch (error) {
+    console.error('[Vectorizer] Error processing files:', error);
+    startBtn.classList.remove('loading');
+    startBtn.disabled = false;
+    showGenericSizeError();
+  }
 };
 
 // Extract width and height from an image
@@ -356,6 +396,82 @@ function showError(key) {
   setTimeout(() => {
     errorDiv.remove();
   }, 5000);
+}
+
+// Show error for individual files that are too large
+function showFileSizeError(fileNames) {
+  const existingError = document.getElementById('error-msg');
+  if (existingError) existingError.remove();
+
+  const errorDiv = document.createElement('div');
+  errorDiv.id = 'error-msg';
+  errorDiv.style.cssText = `
+    background: #ef4444;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+  `;
+  errorDiv.innerHTML = `
+    <div style="margin-bottom: 8px;">⚠️ ${t('fileTooLarge')}</div>
+    <div style="font-size: 10px; opacity: 0.9; word-break: break-all;">${fileNames}</div>
+  `;
+
+  startBtn.parentNode.insertBefore(errorDiv, startBtn);
+  setTimeout(() => errorDiv.remove(), 8000);
+}
+
+// Show error for total payload size
+function showTotalSizeError(totalMB) {
+  const existingError = document.getElementById('error-msg');
+  if (existingError) existingError.remove();
+
+  const errorDiv = document.createElement('div');
+  errorDiv.id = 'error-msg';
+  errorDiv.style.cssText = `
+    background: #ef4444;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+  `;
+  errorDiv.innerHTML = `
+    <div>⚠️ ${t('totalTooLarge').replace('{size}', totalMB)}</div>
+  `;
+
+  startBtn.parentNode.insertBefore(errorDiv, startBtn);
+  setTimeout(() => errorDiv.remove(), 8000);
+}
+
+// Show generic size error (fallback)
+function showGenericSizeError() {
+  const existingError = document.getElementById('error-msg');
+  if (existingError) existingError.remove();
+
+  const errorDiv = document.createElement('div');
+  errorDiv.id = 'error-msg';
+  errorDiv.style.cssText = `
+    background: #ef4444;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+  `;
+  errorDiv.innerHTML = `
+    <div>⚠️ ${t('serializationError')}</div>
+  `;
+
+  startBtn.parentNode.insertBefore(errorDiv, startBtn);
+  setTimeout(() => errorDiv.remove(), 8000);
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
