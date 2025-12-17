@@ -9,6 +9,7 @@ let removeBackground = false;
 let autoPause = { enabled: false, count: 10, minutes: 5 };
 let processedCount = 0; // Counter for processed images since last pause
 let autoPauseEndTime = null; // When the automatic pause ends
+let queueExplicitlyCancelled = false; // Flag to prevent persisting after cancellation
 const downloadNameMap = new Map();
 
 
@@ -21,8 +22,22 @@ restoreQueueFromStorage(); // CRITICAL: Restore queue from storage on startup
 loadAutoPauseState(); // Loads auto-pause state if it exists
 
 // CRITICAL: Persist queue to storage to survive service worker restarts
+// NOTE: We do NOT persist binary data (q.data) to avoid quota exceeded errors
+// Binary data stays in memory only. If service worker restarts, queue will be lost.
 function persistQueue() {
   try {
+    // Do NOT persist if queue was explicitly cancelled
+    if (queueExplicitlyCancelled) {
+      console.log('[persistQueue] Queue was cancelled, skipping persistence');
+      return;
+    }
+
+    // Do NOT persist empty queue (it was likely cancelled)
+    if (queue.length === 0) {
+      console.log('[persistQueue] Queue is empty, skipping persistence');
+      return;
+    }
+
     chrome.storage.local.set({
       persistedQueue: {
         queue: queue.map(q => ({
@@ -30,7 +45,7 @@ function persistQueue() {
           type: q.type,
           status: q.status,
           size: q.size,
-          data: q.data, // Include data for processing
+          // data: q.data, // REMOVED: Binary data causes quota exceeded error
           width: q.width,
           height: q.height
         })),
@@ -41,37 +56,58 @@ function persistQueue() {
         timestamp: Date.now()
       }
     });
-    console.log('[persistQueue] Queue saved with', queue.length, 'items');
+    console.log('[persistQueue] Queue saved with', queue.length, 'items (metadata only)');
   } catch (e) {
     console.log('[persistQueue] Error:', e);
   }
 }
 
 // CRITICAL: Restore queue from storage when service worker starts
+// NOTE: Restored items will NOT have binary data, so they can only be displayed in UI
+// They will be skipped during processing (see kick() function)
+// IMPORTANT: We should NOT restore the queue if it will just be skipped anyway!
 function restoreQueueFromStorage() {
+  console.log('[restoreQueueFromStorage] ========== ATTEMPTING TO RESTORE QUEUE ==========');
   chrome.storage.local.get(['persistedQueue'], (res) => {
     try {
+      console.log('[restoreQueueFromStorage] Storage result:', res);
       const state = res?.persistedQueue;
       if (state && state.queue && state.queue.length > 0) {
         // Only restore if timestamp is recent (less than 1 hour old)
         const age = Date.now() - (state.timestamp || 0);
+        console.log('[restoreQueueFromStorage] Queue age:', age, 'ms (', Math.round(age / 1000), 'seconds)');
         if (age < 3600000) { // 1 hour
-          queue = state.queue;
-          isRunning = false; // Reset to allow kick()
-          isPaused = state.isPaused || false;
-          workerTabId = state.workerTabId;
-          processedCount = state.processedCount || 0;
-          console.log('[restoreQueueFromStorage] Restored queue with', queue.length, 'items');
-          console.log('[restoreQueueFromStorage] Queue items:', queue.map(q => `${q.name}:${q.status}`));
-          broadcastQueue();
+          // Check if there are any items still pending or processing
+          const hasPendingOrProcessing = state.queue.some(q => q.status === 'pending' || q.status === 'processing');
+
+          if (hasPendingOrProcessing) {
+            console.log('[restoreQueueFromStorage] ⚠️ Queue has pending/processing items but NO binary data');
+            console.log('[restoreQueueFromStorage] ⚠️ This means Service Worker was restarted during processing');
+            console.log('[restoreQueueFromStorage] ⚠️ Items would be skipped anyway, so NOT restoring queue');
+            console.log('[restoreQueueFromStorage] ⚠️ Clearing persisted queue to avoid confusion');
+            chrome.storage.local.remove('persistedQueue');
+          } else {
+            // Only "done" or "skipped" items - safe to restore for UI display
+            queue = state.queue;
+            isRunning = false;
+            isPaused = state.isPaused || false;
+            workerTabId = state.workerTabId;
+            processedCount = state.processedCount || 0;
+            console.log('[restoreQueueFromStorage] ✅ Restored queue with', queue.length, 'items (all completed)');
+            console.log('[restoreQueueFromStorage] Queue items:', queue.map(q => `${q.name}:${q.status}`));
+            broadcastQueue();
+          }
         } else {
-          console.log('[restoreQueueFromStorage] Queue too old, clearing');
+          console.log('[restoreQueueFromStorage] ❌ Queue too old, clearing');
           chrome.storage.local.remove('persistedQueue');
         }
+      } else {
+        console.log('[restoreQueueFromStorage] ℹ️ No persisted queue found in storage');
       }
     } catch (e) {
-      console.log('[restoreQueueFromStorage] Error:', e);
+      console.log('[restoreQueueFromStorage] ❌ Error:', e);
     }
+    console.log('[restoreQueueFromStorage] ========== RESTORE COMPLETE ==========');
   });
 }
 
@@ -125,6 +161,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     isPaused = false;
     processedCount = 0;
     autoPauseEndTime = null;
+    queueExplicitlyCancelled = false; // Reset flag to allow persistence
     chrome.alarms.clear('autoPauseResume');
     chrome.storage.local.remove('autoPauseState');
 
@@ -255,25 +292,42 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   // Cancel and clear queue
   if (msg.type === 'queue:cancel') {
-    console.log('[background] queue cancelled and cleared');
+    console.log('[background] ========== QUEUE CANCEL REQUESTED ==========');
+    console.log('[background] Clearing queue with', queue.length, 'items');
+
+    // CRITICAL: Set flag to prevent persistQueue from saving empty queue
+    queueExplicitlyCancelled = true;
+
     queue = [];
     isRunning = false;
     isPaused = false;
     processedCount = 0; // Resets counter
+    workerTabId = null; // Resets workerTabId
+    autoPauseEndTime = null;
+
     // Clears auto-pause alarm
     chrome.alarms.clear('autoPauseResume');
-    chrome.storage.local.remove('autoPauseState');
-    chrome.storage.local.remove('manualPauseState');
-    chrome.storage.local.remove('persistedQueue'); // CRITICAL: Clear persisted queue
-    autoPauseEndTime = null;
+
+    // CRITICAL: Clear ALL storage related to queue
+    chrome.storage.local.remove(['persistedQueue', 'autoPauseState', 'manualPauseState'], () => {
+      console.log('[background] Storage cleared successfully');
+      if (chrome.runtime.lastError) {
+        console.log('[background] Error clearing storage:', chrome.runtime.lastError);
+      }
+    });
+
+    console.log('[background] Queue cleared, broadcasting update...');
     broadcastQueue();
+
     // Notifies ALL vectorizer tabs (not just workerTabId)
     chrome.tabs.query({ url: '*://*.vectorizer.ai/*' }, (tabs) => {
+      console.log('[background] Notifying', tabs.length, 'vectorizer tabs to cancel');
       tabs.forEach(tab => {
         chrome.tabs.sendMessage(tab.id, { type: 'queue:cancel' }).catch(() => { });
       });
     });
-    workerTabId = null; // Resets workerTabId
+
+    console.log('[background] ========== QUEUE CANCEL COMPLETE ==========');
     sendResponse?.();
     return;
   }
@@ -412,17 +466,20 @@ function markDone(result) {
   }
 
   console.log('[markDone] About to broadcast and kick. Queue length:', queue.length);
+  console.log('[markDone] Queue after all processing:', queue.map(q => `${q.name}:${q.status}`));
   broadcastQueue();
   isRunning = false;
 
   // Check if all items are done - if so, clear persisted queue
   const hasPendingOrProcessing = queue.some(q => q.status === 'pending' || q.status === 'processing');
+  console.log('[markDone] hasPendingOrProcessing:', hasPendingOrProcessing);
   if (!hasPendingOrProcessing && queue.length > 0) {
     console.log('[markDone] All items done, clearing persisted queue');
     chrome.storage.local.remove('persistedQueue');
   }
 
   const waitMs = delaySeconds > 0 ? delaySeconds * 1000 : 0;
+  console.log('[markDone] Delay configured:', delaySeconds, 'seconds =', waitMs, 'ms');
 
   // Se o tempo de espera for longo, pede para a aba manter o worker vivo
   if (waitMs > 20000 && workerTabId) {
@@ -430,7 +487,7 @@ function markDone(result) {
     chrome.tabs.sendMessage(workerTabId, { type: 'queue:wait', duration: waitMs }).catch(() => { });
   }
 
-  console.log('[markDone] Calling kick() after', waitMs, 'ms delay');
+  console.log('[markDone] ========== CALLING KICK AFTER', waitMs, 'ms ==========');
   if (waitMs > 0) setTimeout(() => kick(), waitMs); else kick();
 }
 
@@ -649,13 +706,22 @@ function getMappedName(url) {
 }
 
 function sendProcessMessage(tabId, item, position, total, attempt = 0) {
+  console.log('[sendProcessMessage] ========== SENDING POC:PROCESS ==========');
+  console.log('[sendProcessMessage] TabId:', tabId);
+  console.log('[sendProcessMessage] File:', item.name);
+  console.log('[sendProcessMessage] Position:', position, '/', total);
+  console.log('[sendProcessMessage] Attempt:', attempt);
+  console.log('[sendProcessMessage] ==========================================');
+
   return new Promise((resolve) => {
     chrome.tabs.sendMessage(tabId, { type: 'poc:process', item, format: downloadFormat, removeBackground, meta: { position, total } }, () => {
       if (chrome.runtime.lastError) {
-        console.log('[Vectorizer-Ext] sendMessage error', chrome.runtime.lastError.message);
+        console.log('[sendProcessMessage] ERROR:', chrome.runtime.lastError.message);
         if (attempt < 3) {
+          console.log('[sendProcessMessage] Retrying... (attempt', attempt + 1, ')');
           return setTimeout(() => resolve(sendProcessMessage(tabId, item, position, total, attempt + 1)), 500);
         } else {
+          console.log('[sendProcessMessage] Max retries reached, marking as pending');
           // refile to pending so it can retry later
           const idx = queue.findIndex(q => q.name === item.name);
           if (idx >= 0) queue[idx].status = 'pending';
@@ -663,6 +729,7 @@ function sendProcessMessage(tabId, item, position, total, attempt = 0) {
           return resolve();
         }
       }
+      console.log('[sendProcessMessage] Message sent successfully!');
       resolve();
     });
   });

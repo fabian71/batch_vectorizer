@@ -1,1 +1,746 @@
-const a0_0x580085=a0_0x2be3;(function(_0x471f23,_0x34dbd6){const _0x56c302=a0_0x2be3,_0x510a47=_0x471f23();while(!![]){try{const _0x30d24e=-parseInt(_0x56c302(0x1c0,'isQ8'))/0x1+parseInt(_0x56c302(0x13b,'M4vp'))/0x2*(-parseInt(_0x56c302(0x101,'G6Mi'))/0x3)+-parseInt(_0x56c302(0x131,'&cwQ'))/0x4+parseInt(_0x56c302(0x201,'8$ir'))/0x5*(-parseInt(_0x56c302(0x1a4,'IXoy'))/0x6)+-parseInt(_0x56c302(0x11a,'3%3z'))/0x7+parseInt(_0x56c302(0x1c1,'K$u)'))/0x8+parseInt(_0x56c302(0x2fc,'fvJT'))/0x9*(parseInt(_0x56c302(0x267,'Mag2'))/0xa);if(_0x30d24e===_0x34dbd6)break;else _0x510a47['push'](_0x510a47['shift']());}catch(_0x281a8a){_0x510a47['push'](_0x510a47['shift']());}}}(a0_0x17f4,0x9383b));let queue=[],isRunning=![],isPaused=![],workerTabId=null,delaySeconds=0x5,downloadFormat=a0_0x580085(0x2f0,'NS3v'),downloadFolder='',removeBackground=![],autoPause={'enabled':![],'count':0xa,'minutes':0x5},processedCount=0x0,autoPauseEndTime=null;const downloadNameMap=new Map();let stateReadyPromiseResolve;const stateReadyPromise=new Promise(_0x90716d=>stateReadyPromiseResolve=_0x90716d);loadConfig(),registerDownloadHandler(),restoreQueueFromStorage(),loadAutoPauseState();function a0_0x17f4(){const _0x2bb04d=['cSo0s8kCCCoqyJJdNCkfWPZcONu','W4qpWQS3p0j6uNrHW7q','k8oPpCkdcNieWO/cUmkBxSoUkgldT8k6WQGuWQmQWQGAhmkDkmkkA8oJxSo6WPrYW7/cRG','hWRdSwLeWPRdOq','oXDApaS','nmkyW58','WO8ImCoqWQRcKCoAWOzi','x8oxWOZdIq','W5JdG8kYnez+qq','dH9AlYfigW','W6NcMSkbt8kWzfddNmk/W4JcHgpdI8kXB8oT','W6FdMXVcI8oixW','iaVdHd/cJa','gCkYWQtcM8kh','cvlcLhOgW5uJW61WW5HkwtFcPXnHtrDFWPLpWQnSW4m0FdOSWPe5nW','Ct/dKxf+WR4qW4niW6VdNCk6vSoj','vSoaWOFcRSo2','w8odWP3dKG','crZdRMa','W51EyComW53cTCo/','iCoRq8knC8o6AMZdISk9W4JcKxNdK28tu8kFaCovWPtdR3RcPCklWQ3cR8kKW5LDWOyyeq7dHNKoWR8iuCk2W6ZcK1uiW5NdQ8oNpCkSeCo5WRBdLmolWQT0W5xcQvxcVh5uWPlcOSksWRBdJG','fCoLomk0chGt','AwRcTKRdOW','WRLyW4i4c8kaWRpcGCkWhSkwW4qIu1RdPCkzxCoDW7lcQG','WQbZECkic3BdIq','W4pdSSoK','WOqtc8okWQS','k8kkWQxdJfi','lmotsCkNuq','pLdcKG','WRPzW6u8eW','lmoKWOaAwrO','u0FcRSk6WQG','WQT8dW','W4TIwmo/EW','W5jpxmoBySk+WRiaWQqWWQ0vbgxdSYa','cCo5gCkhba','WRNcPSk5W6xdPq','dqtdQM1pWPRdOSod','rCozWO7cTSoJ','j8kKWPBdGLO','WRKWWPWUvmonzWGuW5tdSq','f8kSWQ/cHSkD','WOa9WOVdVmkJW58vtMtcMmkI','EvdcQSkSWQyeWOFcTKJcNmkjW4rkaCoNWRRdPLtdQSkbiCkmWPpdVv0','yMVcTexdQW','zCkkorDP','vCkQhZrV','W7JcKmkcrSkVzIJdMSk5W5C','tSoHWQdcMa','z0ddVCkM','WP05WOJdVq','lWtcRCkDWOzUkmolW4pcVh4/seRcI8kty3rXW6XOW6JcTvRdQq','uCkiWQNdMrVdTmoQW5DoWOu','dXddShfiWPBdQG','WR3dRIu','W5ndWOVcUta','kCkcW53cJSor','vMZcJuxdNw8','iJRdUh7cLG','uCk8jWjrWPO','hqBcImkzWOz4D8oo','CmoDWOFdMCokW4FcMmkIrmk/iCkHWQJdT8kmo03cMgxdQCoBWQmDFG','k1LMWRTZW6TNW6ZcKmo5kxVcTveC','qmoNWQ3cNCoi','WOpcM8kY','W5FdQCkq','gSkfW5ZdJ8oKW77dR8kdBW','b8oQlSko','gG3dGHFcKG','qrNdS8k9W60xWRNcGLxcNSoO','W6rTWOO','wSo8W67dMCoEWOhdVSkAWQVcJGfKbCkjnXxdTLbSW7fK','tLFcPCkOWRKl','w8k2oWHeWOy','qmoNWQK','lGr8dHu','tf3cRdyxW4VcVmkwF8k/WQynFCkS','W6DTWPFdMq','WRtcN8k8W4VdRCojsCoOW5ZcRbBcT8odCrVdLfD0W7vTWQ13WPFdS8oX','W4VdSSo0h3tcGCo1jKXgqqDepq','eWtdS2a','WOaSWOtdRmkBW4K','WQziDmkrpa','fSoPrq','WOWYBxy','W7vhB8omW5FcLSo1WOi+WRDXW5vSo8k8W5nyECoPw8k8W5lcUSkCtmoK','WRJdK8ohlSkZWQ/dGCorALRcINHLWRuzW71CnGCmc8oQWOddNG','WQD+zSkF','gWZdSgfOWPxdQ8odCW','W67dJCkxeYy','zSk1jGrbWRpdRKBcLSkGW5xdGCoLB0XAESo+W4aAFb/cMb7cJcldUXD4p3pcHCociqnOl8kxW5nED8kV','W7LPWPtdMfldNCo+','W5FcRSkuu8kr','WOaMWReyAq','W5VdPmoZfa','WR3cNmkdW4RdRW','W5hdGSk0','zmkwWRddLZS','WP0JjmolWO/cGW','mH5O','W7TswSoiW6y','EutdVSkNESk4WRe','pLRcM28zW7K','gJtdL0tcG8odW7JdUu4rsg1aWP9teq','W5NdOSo/W4FcVG','zLpdUCkKESk4','W6VdPmoRbKa','cvlcLhOgW5uJW61WW5HkwZtcPaP8aWqqW5jeWRjOWOP5pZO5WPf8jmkoFd5bW51+WRTXjSkHobddLmkZdSoUWQFdUmk3oSo9WOS','WQldRJ/cGcrP','W6NcMSkCtmkNyNC','W6/cNSkouW','WQG0WORdUCkkW7StswRcR8kMldZcKgqIW7JdPCo0tNJdVgPMl2BdQSkwgCoGECk2fWpdOSkeW4vqW7byW7NdS2NcOG3dRd46W7vmBeNdLmoXWPZdRSk2WQunf3jCWQ1jlN4RWQyXiq','WQbZD8koh2i','W6FdP8ozW5hcGSoRWPrGbSkNdmk1W4JcTwlcR8oYW4FcLSkEvCocWOldMYTxqCo4pSkcW5hcMKBdP2ldTCklr8ozWQRdLxhcScWpWRfuW5O5r8oKWOXne2VcSq','ySo9WPpcP8osWQdcM8o3pq','WO1AW6K8g8kKWRtcMmk2imkEW582CgddVCkDr8ozW4ldR8oTWQFcHsnfWQVcGcFdLGlcRmk3W79TlCoqq8kFWPK','lCkzW5hcISobW4RcH8o0','W4jlFCokW7NcOmoOWOmP','W51sq8oxW7m','rbpdSCk6W6KgWOG','hmksWOC','wmoaWOK','DmoXWPpcP8oYWQdcMa','f8osWR89AG','hGRdSgniWPZcTCovBSkzWOa4ECkjrq','W5PtFSoB','x3NcKa','D8oGWPlcSCo6WQNcMG','xmkSpqP1WPpdRKhcNmkIW5hdH8oJz3O','rqldOmkIW70w','aCoCbSkAja','W4RdP8ky','lJVdOd/cRelcOYDya8kmW7bGjmoL','a8kJWQ/cKSk5W4RdU8kmWQNcNqS','W4BdS8kuebXdWOCoBW','WOJcKCkH','o8oVWOKHrHldNq','WQddQJZcGG','BN3cO8kDWQy','WPmblmkFW5LvWRhcISkWWR8HW7bPhmozWP3cQCkitItcLhKbreCXegWIW6H9vSkdnG','zcVdH20','fmoqtCkmCG','W5BdPtGoWPBdLSowA8kejmoTW6brW7ydkf1aWPDCdW','e8oKmSkgchjmWPpcQmkbE8ogFe7dKSkPWQ8cWQG','Amo7WP7cOSo3','orr7','WQpdOJ/cKIrKWQG','eqRdVwrn','hCoPW4O','W4RdP8kq','WPO+kmoAWONcHmooWPHD','WOq8WRBdJ8k/','jKnXWRvp','jmkqWRFdU34','iuVcLhWyW6i','W5ddQCksfcLqWQyCAmkQW5C','W6ZcLSkivmkU','WRDjmdHq','sSoBWRpcHG','W5rwWRxcPXm','W6RdVSone0W','W5NdGSkKoez0rmk6WPJcIhS','WP0JkSonWPVcL8ok','iYhdTZhcKa','W4pdSSoGehq','WOFdH8oEkSk/WPNcNSotyvdcSYS','yZ7dHgPBWQXF','gZtdIKxcP8oDW5RdT0K','W6ldTZCzWOBdIW','zSkYiazoWQ/cU3VcJCkvW5NcLmoHy2TgDmo/W5fNocZcIqZdLg3dUHL1B3tcG8oElvW','WPmLlmkpW5LvWRhcHSkBWQ82WQHjiSoFWQ/dPmkOxYxcGLuduMLWjNXNW7HQbmkfmc4UD8op','dHxdSMXv','trNcQ3KvWOFcUCoAoSkrW7yHjG','W4WCWPxdVKldMq','WQvHW6ieca','ASo1WPdcPG','vMBcHa','WP/cHSk6W5ZdQCoGemowW5W','gvtcN0q4','BMpcS8k8WPO','WO7cMmk0W5RdQ8oN','hWZdSge','rCkvWRhdLbldQmo4W5PMWO1lxGJdGq','WRONWP0PFmoBzX4rW7ddU8ovb08','W5dcLSkywmkW','WQqpj8oRWPy','W7ddPCkKeX0','W7/dRq8iWOG','mSoUWO4uqW','WRj8hri','W4bfEq','A8o9W5WjhWpcJmk4EmkQmG','W6/cKmk/vmk0AhZdMG','WR1ME8kF','i0RcKh0i','qvpcV8kSWQu','W6bDWOJcQXq','hmkPWQy','W6xdNWlcJmoqw8o2W6m','tSk2jaa','rCoxWOpdNW','Dc/dIx9xWOWaW5ncW5BdJCkO','W7ddKblcSmoxv8o+','W4ldTmoTbgZcI8oN','W4VdUmoXo08','W7PJWPFdMq','W4LUB8o3W4q','hCoQla','WP1/hGldPCoBW7vIhSoUWQlcOxrZWOaNl1xdISoDEqVdVxXJWOWUpmoEeYtcP3ldHs8WWRtdNZNcGvNdL8koCCoXW7yyW4JdHbLwWR4o','tmkBWQJdJX/dQ8ojW59vWPfCyb3dLmk+zW','hW3dI0xcMa','hCkNWRe','CmoTWO3cPG','W5rqqq','WR3cRCkHW6ZdIW','xSklkI1I','qmoTWQdcM8oqWQy','W7tdIWlcI8oUw8oUW7um','a8kYWQdcGSkbW5W','W5NdK8omW7lcTG','rWpdPmkJW61FWP/cHKtcOSoHuG','fmo6kSkuia','oGhcVSkBWRK','db5qkcuvdmoTW6a7eSod','W7nEWO7dSbtcHSoUfmoz','gmksWQhdSbddJSo4','W4VdSSo0h3tcGCo1jNK','C8kDWO/dQJe','fCoNW5NcKq','uSkoWQFdJGVdTa','h8oQW6VcU8ow','W7TezmoBFG','W7tdMHlcQmoxsCoVW6mhW4CH','W5tdO8kdecjgWOe','s0hcM8kUWRGqWPdcVqC','tJ3dNNVcJmoMW4K','pCoGWPKwrW','W7PLWOddMq','W4NdLmkJmW','sCo2WRJcLCoO','WRDvW7y8jW','lXFcUCkBWPHSymofW5lcTKDcou7cM8kdCZe/W6b+WQBcVL7dTNjlWOFdKhDyzf7dV14gWPpdKZddHG','W4LtEmo1ya','W6Pnu8opymkDW6CDWQqzW4S7gMtcSJ04eSo8c3hcOWCro086W6q/W5ddUCoYiKe0WP3cK2hdP299ESohCJeOWPP0W45ikG','fHRcNCkoWRa','W4qbWOuR','hbxdRMLy','rr3dQmkMW7GaWOK','W5xdImk6mujV','u8kpWQJdJHFdQSo8','CmouWO/dMCokW73dISkDumkKnSkzW6ZcMSokpu3cNJddTSouWRGyxCktWPCDW47dLGBcVvHGW4RdP8o6W7GaW4fD','vMxcOLldOq','ySo7WPhcP8o+WRW','Fc/dI3LAWRC','W7hdVCklieC','BmoXWPtcPmoZWRO','qSoWW7tdG8obWPRdQCk8WQxcQJX1','W5Dpqmo4ASk6W6a','hahcRmkiWOaXpCkfW5FcRa1PFfZcMSkjDd1LW6zTW6BcVflcTq','W65uWP7cUqFcHmo/','bCoJWOWwrbJdISkRpSk4zmopWOpdQSo9cIOPWOpdTSoxamkCpSkRW5q','WQK7kmkoW4bj','aaZcQmkD','W5/dU8o3g3y','W7bfWOZcVHpcKa','jX5Xgdnv','dWddRxbnWO8','nSkwW5xcNG','sxNcJ0VdNq','s8oTWRO','ufFcUmk6WQex','W4VdQCkh','cCoYtCknECozya','WRKJWPu','gqRdQwTnWPtdRSocEa','W7hdKqhcISosvCo6W6iVW40/v8kdW74','WP3cRmoneLNcQCoffa','WPjVoY1F','dqRdVt9rWONdOmofBSkEWRC','Bg7cMvtdOW','t8o6WQVcNCoqWQS','W5RdPmoeW7xcH8ojWOK','FIVdIhS','jK3cNgu','WOeGWRFdRmkd','rWpdPmkJW60','oIXAori','W4WyWPJdO0m','oCoaDSk9CG','W6vyWOpcRI/cJCo+a8oy','jKn1','WRDSgcHI','WPvxks1KW43dGSokFa','fSkCWOtdTa','W6SlWO47i3OOqwD9W7ldPWtcU0RdNmkPWRO','W4RdN8kjivm','WRD0orzd','dHL9fc5xj0TaFhzbWRNdOvLGWQlcR24uhaqNW6pdJ8k2WPLTFvpdPSo2gSk5W6S','jGbCpITYxSogW7XUd8odW51WtCotaI8VqCkZy2C3AsFcN8kYW7DfWRzRr8kQ','W711WORdMq','WP05k8k7W6y','pCkJW4/dSmkJW7RcMCoRarW6WRq','jdBdRfNcQa','lCoOWPCq','cqRdKMPcWPRdO8odx8keWQK4rSkCtNtcJYq','FbpdL8kbW4y','WOddRWhcSdS','W4ifWOO3pKi','WOi4jSoEWPy','WQS7lmkDW58','uuBcPmk9WQWeWPa','W4ddKSkXmWC','wmoNWOlcK8otWQVcH8oDx8klmG','rrRdG8kpW4q','rrNdRmkZ','WRu7kSoEWP7cSCoAWOfcWQTTWQxdUZm+WQFdJmoQWQXiW7DdW4yUWP55W6r1W4hcL0RdGmkxWQVdImkNW7GqWPq5ASoQW7KvWOPIWQruwtdcIIW','WP3cJmkhW5ZdQW','omohjmkqgW','WPBcSCkzWP/dJmkeWPDXcSkdaSkYW5lcQLtcQCk9W5lcMSoSxW','WRPzW6e','W6ZdJSkHaxG','z07dPW','wmoPWQZcJW','iu/cMwez','q8k+WPVdICkOW7JdKXrEBtzG','WRSJkmkiW5Hj','W4muWOySpvq','W5rsWQNcPJC','W7JcKmkcu8kPBxC','W4jpymozW4JcUG','W6VdNSoAaL8','W4GhWOBdOvldMcNdHmoAFqK','W6vbBmo3W50','WQy6WPu','q8k4Amoxv1CdWONcGmkWxq','m0RcGwC9W7a5W7bWW5yEEYlcRG','WPddLSoaiSkOWQ0','WPC3WOVdVq','n8kNW4NdTmkTWOZcISo7cbiw','WQ9dmsngW4hdHmoKoCoriftdS0HQW6RcJ8kYWP82WOX+DmoEWO1QdCkQW7K2','nmksW5BcNmoaW4S','zeddOa','W6RdP8oUfMe','bYFdLLlcH8oCW5VdSvuf','p8oTWOWhqGW','pCoNWRqmra','zCkGWOddIXi','WRJcK8knW4xdSW','itNdOqJcQG','FYtdQhTDWQWeW5Di','WOZcHSkWW4NdSSoX','brBdTGtcKa','cvtcNgSgW4XSW4b0W6KgFZldPv9HucikWPXiWQLPWOWN','WPyYyMa','WODwpdzbW58','D8oIWPO','W5tdSSk0jZO','WOlcMSkCW77dIa','hCoJW4pcL8oSWQq','W6hdHWBcGq','gWZdSgrnWQ7dVCok','vXRdOmkKW6uw','pmkwW4ZcMG','WRHxW6S4','tmktWQJdJWRdOSoQ','WQvcW6CPcSkw','kx3cLY0wW6SdW4LPW7pdOSkm','W6zdWONdSvi','tCkvWQe','WPWpi8k+W4i','uv3cPSkQ','WPuXWOVdVa','WPy8thZdLSoEEsD0que','xfVdOSkiwq','lmoOWQytxW','crjfoa','wwBcLKZdNq','WQOQruNdIa','EvaKWQGwW7yIW6pdHmoxE3tdSKbn','hqhcVCkvWOa','DKFcUmkOWP0','DSkzWOldLI8','f8oUka','zu7dS8kIFW','yGxdLw9M','uuBcQSk7WRGqW48','nsxcV8kOWPO','WPmMzwBdHa','WP1XeaddQSo9W7j5bmoqWQFcIsCRW65UCXZcKSk9zf/cRJjwWRfny8oOlGxcKa','WQPUdJNdMq','gqFdUZlcMa','iLdcLJijW74IW6y','W6JdL8kHhwa','n8kzW7NcL8ovW5hcJa','WPW2WQhdVCkAW58uugZcKCkUnYJcS146W7ZdV8oWFJ0','jaZdPWxcUW','g8oUoCkqihKFWPBcQa','WPXdlG','mqZcKmkpWPG','W65qWP0','WRP0rmkpbh/dHCk4xCkq','BCo6WPVcRa','p8ohW4pcKSoQ','W6pdKCoBnwa','W5ZdTmo5fa','l1XH','fCoZp8kfeweFWO/cOW','aYRdGrVcNG','WOHMESkBghZdN8klgSoPrSk6rd4znSk6WQGHcuNdGbTTW5/dONW','WRZdRJZcIczK','W6tdIXpcKCoB','zCo5WPFdG8o1','WQRdPcBcItXUWROuDHpcUa','WQy2jmkz','W4dcNSkaqCk0BghdOmo8W6BcKwpdI8k2iCo6FYddUCoOWR3cKmkxWPRdK8kKWQRcKLPB','qCoPWQdcICofWQlcPCo/s8klmNnoW54iWP8','yY/dKq','eWrc','W6hdUJO','vrxdRCkhW44','WO1GW6m+c8kkWRpcHCkJfCknWOCaBuFdLmoCxmosW5VcQSolWQFcHdPdWRFcGaxcNX/cVmk8W6TLAmkht8kzWOpdNxu','WRrOerxdP8orW6i','EuddPmkRFCk3WRVdGq','W6Ljs8ouza','fWFcVCkzWODU','dH9uktvC','W5DgF8oREW','pX7cUSkXWPi','qmkIWPpdVJS','nrxdKuXj','WQjYC8kpdW','WRK4AxddISoMkZvGv1hcPCkjcSkkymkhoCk4ECoRW7q','t8kBWQVdNW','W6PcWR3cQXpcKmo/aSkA','WO0uW4hdTG7dLKxdMCkmsfXaj186b1VcImkGEmk0r8kni8o9','mCkdWRdcJmk4','f8kfWOBcPSkC','W51pvq','sSodWPRdLCoXW7VdJCkbqmkzjSkLWRJcVG','b0xcS8kJW40bWRRcKN0','mSoGWP4bAG3dISkRoq','wapdRmk0W60x','WQGKWROnFa','WOddJSoxkSk0','WR/dVJtcKJu7WQ4arWdcOc4','W7mcWP7dMum','o8kBW53cMSog','W5xdVrukWOG','t0FdImkPAq','f8ojrmkAqq','aSkJWRlcG8kyW5S','mSoUWOO','WORdLSoxjSk1','hbddQMPXWPRdUSovBSk/WQeUymkfwq','WPZcGmk6W5RdP8oZda','fbBdJMruWOJdQSoc','WPJdNJRcVXK','AeldOmkIsW','W70UWPxdS0e','W54bWOO9','W6RcISkjuSk/','W6PlWOhcSW0','zCo4WPZcSCo2WR0','WPmMzwhdMa','l8oFrmkOFW','W4evWOiTlr16DgzNW7ZdPW','WPa3WOVdQ8kAW4GtxNhcKmk1','D3/cP2FdIXpcGdjEfCk7W6q','zSk2W59ah0RcJSkia8kuzSoOW5a','W4JdSSogW5u','WQ/dVIxcIabGWQ4drG','dHz9bs50oKPqtZjlW5JdOxjkWONcGsjrmvaYW6hcJmoIWPj2m1dcQCoLg8kVW7e5nY95WQNdOftdL8oS','WQfIE8kvhhq','iYhdSW','ACo1WPpcTSo6WQlcR8oZmcquWRdcHLRdVLW','qG/dSCkZ','WPi2BNFdImovBa','xHZdRmkqW48','bHdcTCkxWOvUumolW4tcS0rTDKRcGmkc','gbRcVW','WP4LkSoCWP/cG8oCWPXdWPW','W5bevSoXySkQW7WwWQ8HWPK','a8kwW5tcMSogW47cKSoqgmkhW7ybW67dPfhdNK7dISoOsCkcwK7dJwlcTSk3W47dU0CKWOTjWPrdW6xdH0nGqefxWQZcQ3DagSkDWQG','WPacjmk+W44','lSozW53cGSo3WRJdJI9l','tSomWP/cL8o3','W7HKWRWPwmoVrs0','W4OOWQ4kgG','ELxdSCk3zSkL','WORdJ8otlmkJWRK','W4neyCoVW7m','W7ddOCk4eJK','jG99aZbd','W59eF8oSBq','W4hdHY0OWQW','W6uwWOiloq','WRDdW7iYl8keWRtcN8k8','lXNcT8kzWPDkz8oEW4JcIejQALRcVCkszYb6W54/WQ3cR0NdTwW','WR9OCq','Amo7WPO','W5Xpy8orW4RcTW','W4juu8ojFSkQ','yJ/dI2PhWRia','aYZdIvq','ycldSxvA','WPm6kmkoW4z+WQZcJCkVWODZWOXzaCoyWQxcQCkztIZcN0ybdq','W6BdMXJcGmoZx8oOW7uiW4u2','n8kqWR/dKhu','r8ozWOK','WRiuWQS8EG','WR/dVJtcKJu7WROfvW7cHcPPxtm','tfpcPSkQ','wHNdOSk3W6q','W4D4WPZdN3e','W5bvrSosw8k4W70aWQr+','W6ryzSoluq','ELxdV8kXCSkXWRm','dHhdSxDaWPZdQG','W77dOtWiWPddJa','W6Pnu8opymkDW6CDWQqzW4S7gMNdOdLSbmo0dhhcOqCn','uSkoWQNdIb/dOmo8','uKZdSCkXEmksWRNdIIJdR8kXgadcM8kIwXzrrCopvd91E1W','gZRdNG','W59FA8omW4u','W4tdJmo/W7hcSG','hmoKoW','r8ozWO3dM8on','bSoVW4NcHmoW','bsX8hbq','BsddPmk1W7WkWP/cIK3cSSo+gSkxWOepmmk8WOzrsSoqjWZdThxdU01YW5igAJBcVYtdLSkY','W4SrWOtdRW','wXFdSq','W7PHFmojWPGpWQlcOmkNWOObWR4','wHNdPG','W4/dP8o0W6NcQG','WPa5WPhdU8kg','W55pFmonW5xcOCoUWOK/WRSKW6nnhW','EJlcPIZdIf/dPsGnlCoyW78J','nc7dQwLl','aSoYW4lcGSo5WQVdHa','W7BdNmo1W5pcPq','rmkuWQldRHFdQSo8','WRKIlmkjW4GaWQdcGSkKWRK2WRe','W5H6ymoUW6u','uSkFWQJdNJpdOSoQW41bWOvC','W55pymoAW5xcVmo9','h8o0umkqAG','WQKcks0uW5/dG8oyBCoNjHW','WONcM8kNW63dP8o3aq','W4bYWO7cNYu','j018WQfcW6zcW77cGmoykvVcTf0ngq','tgZcGfBdHNxdM8ovWQG2ceNcJSkFW60F','W4DEA8otW48','dGddSgfSWP7dVmovASkkWQe','y8o+WPpcS8oY','d09CWRz3','WO02mCoCWPi'];a0_0x17f4=function(){return _0x2bb04d;};return a0_0x17f4();}function persistQueue(){const _0x538489=a0_0x580085,_0x4dfbc5={'OwgzY':'[persistQueue]\x20Queue\x20saved\x20with','kBsUG':_0x538489(0x215,'f)vz')};try{chrome[_0x538489(0x1b3,'fTGf')][_0x538489(0x2bf,'G6Mi')]['set']({'persistedQueue':{'queue':queue['map'](_0x5060d5=>({'name':_0x5060d5[_0x538489(0x2e3,']i*l')],'type':_0x5060d5[_0x538489(0x1ff,'*G%]')],'status':_0x5060d5[_0x538489(0x15a,'PG@a')],'size':_0x5060d5[_0x538489(0x181,'G6Mi')],'data':_0x5060d5[_0x538489(0x112,'PDRJ')],'width':_0x5060d5[_0x538489(0x2b7,'H%%B')],'height':_0x5060d5[_0x538489(0xec,'3%3z')]})),'isRunning':isRunning,'isPaused':isPaused,'workerTabId':workerTabId,'processedCount':processedCount,'timestamp':Date[_0x538489(0x18e,'v$cJ')]()}}),console[_0x538489(0x2ac,'DPOW')](_0x4dfbc5['OwgzY'],queue[_0x538489(0x141,'8#*(')],_0x4dfbc5[_0x538489(0x178,'isQ8')]);}catch(_0x53f09c){console[_0x538489(0x27b,'Z4Q1')](_0x538489(0x2a9,'^rAl'),_0x53f09c);}}function restoreQueueFromStorage(){const _0x20dcd5=a0_0x580085,_0x4b2989={'RNCtB':_0x20dcd5(0x265,'[27N'),'HpOIh':_0x20dcd5(0x17e,'3%3z'),'gDaIx':_0x20dcd5(0x20f,'![Gn'),'Agwgy':_0x20dcd5(0x183,'M4vp'),'lsqXW':'trace','VRlMc':function(_0x2229f8,_0xfe431e){return _0x2229f8>_0xfe431e;},'oEPop':function(_0x20ffb0,_0x1991cc){return _0x20ffb0-_0x1991cc;},'riKfp':function(_0x4cf97e,_0x257ec1){return _0x4cf97e<_0x257ec1;},'VIobd':_0x20dcd5(0x167,'[dYf'),'phTkt':_0x20dcd5(0x2c5,'8$ir'),'GoOIu':function(_0x519493){return _0x519493();},'ISRHE':_0x20dcd5(0x227,'@WBf'),'KkbIa':_0x20dcd5(0x205,'f)vz'),'zBjBp':function(_0x5af32b,_0x2487ef,_0x30d3b7){return _0x5af32b(_0x2487ef,_0x30d3b7);},'NOyyT':function(_0x36f5d0){return _0x36f5d0();}},_0x47e7d4=(function(){let _0x439514=!![];return function(_0x1675a1,_0x5d3c23){const _0x1f4a02=_0x439514?function(){const _0x3400c0=a0_0x2be3;if(_0x5d3c23){const _0x1cdc8f=_0x5d3c23[_0x3400c0(0xe3,'Mag2')](_0x1675a1,arguments);return _0x5d3c23=null,_0x1cdc8f;}}:function(){};return _0x439514=![],_0x1f4a02;};}()),_0x2e81d9=_0x4b2989[_0x20dcd5(0x23c,'NS3v')](_0x47e7d4,this,function(){const _0x366b0b=_0x20dcd5,_0x1a0590=typeof global===_0x366b0b(0x2c3,'^rAl')?global:this,_0x2d8b33=_0x1a0590[_0x366b0b(0x135,'H%%B')]=_0x1a0590['console']||{},_0x44abf2=[_0x4b2989['RNCtB'],_0x366b0b(0x25e,'M4vp'),_0x4b2989[_0x366b0b(0x19a,'Mag2')],_0x4b2989[_0x366b0b(0x2e9,'f)vz')],_0x4b2989['Agwgy'],'table',_0x4b2989[_0x366b0b(0x172,'*qlw')]];for(let _0x32560e=0x0;_0x32560e<_0x44abf2[_0x366b0b(0x263,'VTjY')];_0x32560e++){const _0x403037=_0x47e7d4[_0x366b0b(0x1bf,'1e$W')][_0x366b0b(0x2cc,'fTGf')][_0x366b0b(0x2d0,'Mag2')](_0x47e7d4),_0x36ae25=_0x44abf2[_0x32560e],_0x3ec74d=_0x2d8b33[_0x36ae25]||_0x403037;_0x403037[_0x366b0b(0x1d1,'&cwQ')]=_0x47e7d4[_0x366b0b(0x24b,'[27N')](_0x47e7d4),_0x403037['toString']=_0x3ec74d[_0x366b0b(0x2db,'H%%B')]['bind'](_0x3ec74d),_0x2d8b33[_0x36ae25]=_0x403037;}});_0x4b2989[_0x20dcd5(0x188,']i*l')](_0x2e81d9),chrome['storage'][_0x20dcd5(0x2ae,'Mag2')][_0x20dcd5(0x2a2,'fTGf')]([_0x4b2989[_0x20dcd5(0x139,'f)vz')]],_0x4363a5=>{const _0x283b8b=_0x20dcd5;try{const _0xa407e5=_0x4363a5?.['persistedQueue'];if(_0xa407e5&&_0xa407e5[_0x283b8b(0x253,'8#*(')]&&_0x4b2989[_0x283b8b(0x23f,'fTGf')](_0xa407e5[_0x283b8b(0x170,'gqEi')][_0x283b8b(0xea,'Ou*7')],0x0)){const _0x2729d3=_0x4b2989[_0x283b8b(0x226,'isQ8')](Date[_0x283b8b(0x12e,'DmVb')](),_0xa407e5[_0x283b8b(0x2b1,'T*GO')]||0x0);if(_0x4b2989[_0x283b8b(0x163,'K$u)')](_0x2729d3,0x36ee80)){const _0x2c7f1b=_0x4b2989[_0x283b8b(0x173,'isQ8')][_0x283b8b(0xf9,'Rr%M')]('|');let _0x497a49=0x0;while(!![]){switch(_0x2c7f1b[_0x497a49++]){case'0':workerTabId=_0xa407e5[_0x283b8b(0x2b6,'#Fhz')];continue;case'1':processedCount=_0xa407e5[_0x283b8b(0x2d2,'N&BQ')]||0x0;continue;case'2':console[_0x283b8b(0x12c,'PG@a')](_0x4b2989[_0x283b8b(0x1e5,'Ou*7')],queue[_0x283b8b(0x2ea,'M4vp')](_0x2f23f6=>_0x2f23f6[_0x283b8b(0x1ec,'VTjY')]+':'+_0x2f23f6[_0x283b8b(0x1d5,'DmVb')]));continue;case'3':queue=_0xa407e5[_0x283b8b(0x19b,'exRr')];continue;case'4':_0x4b2989['GoOIu'](broadcastQueue);continue;case'5':isPaused=_0xa407e5[_0x283b8b(0x1b4,'Mag2')]||![];continue;case'6':isRunning=![];continue;case'7':console[_0x283b8b(0x1a2,'NS3v')]('[restoreQueueFromStorage]\x20Restored\x20queue\x20with',queue[_0x283b8b(0x281,'uDrj')],_0x4b2989[_0x283b8b(0x296,'K$u)')]);continue;}break;}}else console[_0x283b8b(0x2af,'&cwQ')]('[restoreQueueFromStorage]\x20Queue\x20too\x20old,\x20clearing'),chrome[_0x283b8b(0x223,'v$cJ')]['local'][_0x283b8b(0x1e1,'f)vz')](_0x4b2989[_0x283b8b(0x198,'hIFl')]);}}catch(_0x3580be){console[_0x283b8b(0x1c6,'isQ8')]('[restoreQueueFromStorage]\x20Error:',_0x3580be);}});}chrome[a0_0x580085(0x145,'K$u)')][a0_0x580085(0x176,'8#*(')][a0_0x580085(0x1ce,'NS3v')](async _0x34db14=>{const _0x36dca6=a0_0x580085,_0x42d7d5={'fMfok':_0x36dca6(0x1be,'*YkH'),'eXzBP':_0x36dca6(0x18b,'H%%B'),'EjipK':function(_0x25ec4a,_0x213fa4){return _0x25ec4a===_0x213fa4;},'weoVw':_0x36dca6(0x29f,'isQ8'),'JWCcC':'[alarms]\x20Auto-resume\x20triggered','AMsux':_0x36dca6(0x140,'tF(U'),'mOfeY':_0x36dca6(0x1cf,'8#*('),'JsCRp':'[alarms]\x20Calling\x20kick()...','PrfsV':function(_0x5ae291){return _0x5ae291();}};_0x42d7d5['EjipK'](_0x34db14['name'],_0x42d7d5['weoVw'])&&(await stateReadyPromise,console[_0x36dca6(0x1fa,'M4vp')](_0x42d7d5[_0x36dca6(0x209,'fbii')]),console[_0x36dca6(0x26e,'![Gn')](_0x42d7d5[_0x36dca6(0x241,'3%3z')],queue['length']),console[_0x36dca6(0x1f7,'INGy')]('[alarms]\x20Current\x20isPaused:',isPaused),console[_0x36dca6(0x1b0,'K$u)')](_0x36dca6(0x185,'exRr'),isRunning),isPaused=![],isRunning=![],autoPauseEndTime=null,chrome['storage'][_0x36dca6(0x1ed,'IXoy')][_0x36dca6(0x225,'I33y')](_0x36dca6(0x229,'Ou*7')),broadcastQueue(),console[_0x36dca6(0x10f,'[dYf')](_0x42d7d5[_0x36dca6(0x1ae,'![Gn')]),chrome['tabs'][_0x36dca6(0x1bc,'gqEi')]({'url':_0x36dca6(0x262,'@WBf')},_0x2a25eb=>{const _0x2ce839=_0x36dca6,_0x104ee3={'acHKg':_0x42d7d5[_0x2ce839(0x2f6,'fbii')]};_0x2a25eb[_0x2ce839(0xee,'NS3v')](_0x19c293=>{const _0x562230=_0x2ce839;chrome['tabs'][_0x562230(0x20d,'fvJT')](_0x19c293['id'],{'type':_0x42d7d5[_0x562230(0x102,'tF(U')]})[_0x562230(0xd9,'K$u)')](_0x36f265=>{console['log'](_0x104ee3['acHKg'],_0x19c293['id'],_0x36f265);});});}),console[_0x36dca6(0x1e9,']i*l')](_0x42d7d5[_0x36dca6(0x278,'N&BQ')]),_0x42d7d5[_0x36dca6(0x252,'n$(C')](kick));}),chrome['runtime'][a0_0x580085(0x14a,'Ou*7')][a0_0x580085(0xd5,'I33y')]((_0x11241b,_0x1e1d92,_0x59ae4d)=>{const _0x589ef4=a0_0x580085,_0x165426={'CNEjV':_0x589ef4(0x20b,'8$ir'),'JXbTl':function(_0x10c856,_0x63ccce){return _0x10c856===_0x63ccce;},'pYzuB':'queue:add','CFTBj':'[queue:add]\x20Received','sWdYw':_0x589ef4(0x168,'hIFl'),'pftjn':_0x589ef4(0x1a3,']i*l'),'CLpbX':_0x589ef4(0x24e,'hIFl'),'jDNuQ':_0x589ef4(0x271,'SEVC'),'NAnbr':function(_0x4784b7){return _0x4784b7();},'rxRtm':function(_0x544df2){return _0x544df2();},'nezxv':'[background]\x20==========\x20POC:DONE\x20RECEIVED\x20==========','cURBc':_0x589ef4(0x116,'DPOW'),'boEvC':_0x589ef4(0x16e,'VTjY'),'bDWdJ':_0x589ef4(0x21c,'M4vp'),'mnoQO':_0x589ef4(0x19e,'n$(C'),'QcrWR':_0x589ef4(0x246,'VTjY'),'MVJQV':function(_0x111ceb,_0x32b207){return _0x111ceb?.(_0x32b207);},'WgXmu':function(_0x173ae7,_0x4ad399){return _0x173ae7(_0x4ad399);},'eiIwX':_0x589ef4(0x2eb,'*qlw'),'HLxpz':'queue:get','wdSWQ':_0x589ef4(0x297,'Mag2'),'ndMQf':function(_0x39359d){return _0x39359d();},'wrZwy':function(_0x5274e6,_0xdf4952){return _0x5274e6===_0xdf4952;},'XUmBc':_0x589ef4(0x23d,'NS3v'),'xGIAT':function(_0x5888db,_0x2937bb){return _0x5888db===_0x2937bb;},'MbEVs':_0x589ef4(0x294,']i*l'),'UxTvZ':function(_0x28eaf8,_0x4d1807){return _0x28eaf8?.(_0x4d1807);},'stTXv':function(_0x22bbd0){return _0x22bbd0();},'ACVPm':function(_0x4c39c2,_0x84fea6){return _0x4c39c2(_0x84fea6);},'LmHZx':function(_0x2c7022){return _0x2c7022();},'WcDlQ':function(_0x2c53d1,_0x292c42){return _0x2c53d1?.(_0x292c42);},'qWZzE':_0x589ef4(0x2aa,'M4vp'),'kafjv':function(_0x9e8628,_0x41ecbe){return _0x9e8628(_0x41ecbe);},'LOhRk':function(_0x302da5,_0x2dae9f){return _0x302da5?.(_0x2dae9f);},'KkjLU':function(_0x1fd6ff,_0x2a2b1e){return _0x1fd6ff===_0x2a2b1e;},'CCcUC':_0x589ef4(0x24a,'H%%B'),'UnbGK':function(_0x2c9493,_0x455c57){return _0x2c9493(_0x455c57);},'SoISU':function(_0x48e6b0){return _0x48e6b0?.();},'IKwlj':'queue:pause','RhVbi':_0x589ef4(0x2c7,'Mag2'),'acpaX':function(_0x4944bb){return _0x4944bb();},'nwuXV':'[background]\x20queue\x20paused','sxMiO':function(_0x413d31){return _0x413d31();},'mYOTO':_0x589ef4(0x19f,'*G%]'),'TusgP':function(_0x55c905,_0x21137a){return _0x55c905?.(_0x21137a);},'LQxsW':_0x589ef4(0x282,'INGy'),'Ezmgy':_0x589ef4(0x2fa,'v$cJ'),'bqHGe':_0x589ef4(0xde,'hIFl'),'tlnKF':'persistedQueue','DZFql':_0x589ef4(0x179,'M4vp'),'BfWjW':'alive','APgPi':function(_0x350125){return _0x350125?.();}};if(_0x165426[_0x589ef4(0x14c,'isQ8')](_0x11241b['type'],_0x165426['pYzuB'])){console['log'](_0x165426[_0x589ef4(0x10d,'![Gn')],_0x11241b['items']?.['length'],_0x165426[_0x589ef4(0x2c9,'PG@a')]),queue=[],isRunning=![],isPaused=![],processedCount=0x0,autoPauseEndTime=null,chrome[_0x589ef4(0x2cf,'fTGf')][_0x589ef4(0x1a8,'SEVC')]('autoPauseResume'),chrome[_0x589ef4(0x208,'&cwQ')][_0x589ef4(0x2bf,'G6Mi')][_0x589ef4(0xf6,'DPOW')](_0x165426['pftjn']),queue[_0x589ef4(0x22b,']i*l')](..._0x11241b['items'][_0x589ef4(0x200,'IXoy')](_0x3c5bf3=>({..._0x3c5bf3,'status':'pending'}))),console[_0x589ef4(0x237,'uDrj')](_0x165426['CLpbX'],queue[_0x589ef4(0x136,'f)vz')],_0x165426['sWdYw']),console['log'](_0x165426[_0x589ef4(0x234,'T*GO')],queue[_0x589ef4(0x17c,'n$(C')](_0x3c3e9a=>_0x3c3e9a['name'])),_0x165426[_0x589ef4(0x17f,'&cwQ')](persistQueue),_0x165426[_0x589ef4(0x129,'fTGf')](broadcastQueue),_0x165426['rxRtm'](kick),_0x59ae4d?.();return;}if(_0x165426['JXbTl'](_0x11241b['type'],_0x589ef4(0x174,'uDrj')))return console[_0x589ef4(0x13a,'N&BQ')](_0x165426['nezxv']),console[_0x589ef4(0x2ac,'DPOW')](_0x165426['cURBc'],_0x11241b[_0x589ef4(0xfb,'VTjY')]?.[_0x589ef4(0x26f,'gqEi')],_0x165426[_0x589ef4(0xe1,'hIFl')],_0x11241b[_0x589ef4(0xf7,'Mag2')]?.[_0x589ef4(0x196,'v$cJ')]),console['log'](_0x165426['bDWdJ'],queue[_0x589ef4(0x287,'kEt$')],_0x589ef4(0x17d,'exRr'),isRunning,_0x165426[_0x589ef4(0x1d7,'f)vz')],isPaused),console[_0x589ef4(0x1df,'exRr')](_0x165426[_0x589ef4(0x12d,'Z4Q1')],queue[_0x589ef4(0x23b,'*qlw')](_0xd8ed6=>_0xd8ed6[_0x589ef4(0xf8,'8#*(')]+':'+_0xd8ed6['status'])),_0x165426['MVJQV'](_0x59ae4d,{'received':!![],'timestamp':Date['now']()}),_0x165426[_0x589ef4(0x2ba,'n$(C')](markDone,_0x11241b[_0x589ef4(0x1af,'@WBf')]),console[_0x589ef4(0x1e0,'3%3z')](_0x589ef4(0xe7,']i*l'),isRunning,_0x165426['mnoQO'],isPaused),console['log'](_0x165426[_0x589ef4(0x283,'fbii')]),!![];if(_0x11241b['type']===_0x165426[_0x589ef4(0x12a,'M4vp')]){_0x165426[_0x589ef4(0x1d8,'#Fhz')](_0x59ae4d,{'queue':_0x165426[_0x589ef4(0x2d6,'^rAl')](sanitizedQueue),'delaySeconds':delaySeconds,'format':downloadFormat,'folder':downloadFolder,'removeBackground':removeBackground,'autoPause':autoPause,'autoPauseEndTime':autoPauseEndTime,'isProcessing':queue[_0x589ef4(0x15f,'VTjY')](_0xf7af63=>_0xf7af63[_0x589ef4(0x28b,'exRr')]===_0x589ef4(0x144,'INGy')||_0xf7af63[_0x589ef4(0x29c,'IXoy')]==='pending')||isPaused,'isPaused':isPaused});return;}if(_0x165426['JXbTl'](_0x11241b[_0x589ef4(0x272,'exRr')],_0x165426[_0x589ef4(0x2b2,'1e$W')])){delaySeconds=Math[_0x589ef4(0x29e,'#Fhz')](0x0,_0x165426[_0x589ef4(0x148,'fTGf')](Number,_0x11241b[_0x589ef4(0xd6,'#Fhz')])||0x0),_0x165426[_0x589ef4(0x1da,'NS3v')](persistConfig),_0x59ae4d?.({'delaySeconds':delaySeconds});return;}if(_0x165426['wrZwy'](_0x11241b[_0x589ef4(0x1c8,'IXoy')],_0x165426[_0x589ef4(0x1d0,'8$ir')])){const _0x5eb76c=String(_0x11241b[_0x589ef4(0x264,'AkSw')]||'')[_0x589ef4(0x161,'gqEi')]();(_0x165426[_0x589ef4(0x1fd,'v$cJ')](_0x5eb76c,_0x589ef4(0x182,'[dYf'))||_0x165426[_0x589ef4(0x1f9,'fbii')](_0x5eb76c,_0x165426[_0x589ef4(0xdc,'3%3z')]))&&(downloadFormat=_0x5eb76c);_0x165426[_0x589ef4(0x109,'1e$W')](persistConfig),_0x165426[_0x589ef4(0x1f0,'NS3v')](_0x59ae4d,{'format':downloadFormat});return;}if(_0x165426[_0x589ef4(0x1d2,'3%3z')](_0x11241b[_0x589ef4(0xf3,'hIFl')],'config:setFolder')){downloadFolder=sanitizeFolder(String(_0x11241b[_0x589ef4(0xe9,'3%3z')]||'')),_0x165426['stTXv'](persistConfig),_0x165426['WgXmu'](_0x59ae4d,{'folder':downloadFolder});return;}if(_0x165426[_0x589ef4(0x2d4,'T*GO')](_0x11241b[_0x589ef4(0x2ef,'3%3z')],'config:setRemoveBackground')){removeBackground=_0x165426['ACVPm'](Boolean,_0x11241b['removeBackground']),_0x165426['LmHZx'](persistConfig),_0x165426[_0x589ef4(0x2d5,'#Fhz')](_0x59ae4d,{'removeBackground':removeBackground});return;}if(_0x11241b[_0x589ef4(0x164,'v$cJ')]===_0x165426[_0x589ef4(0x29d,'M4vp')]){autoPause={'enabled':_0x165426['kafjv'](Boolean,_0x11241b['autoPause']?.['enabled']),'count':_0x165426[_0x589ef4(0x27f,'f)vz')](parseInt,_0x11241b[_0x589ef4(0x2f4,'I33y')]?.['count'])||0xa,'minutes':_0x165426[_0x589ef4(0x134,'n$(C')](parseInt,_0x11241b[_0x589ef4(0x2a1,'#Fhz')]?.[_0x589ef4(0x2e6,'G6Mi')])||0x5},_0x165426[_0x589ef4(0x151,'#Fhz')](persistConfig),_0x165426[_0x589ef4(0x2a5,'VTjY')](_0x59ae4d,{'autoPause':autoPause});return;}if(_0x165426[_0x589ef4(0x2cd,'uDrj')](_0x11241b[_0x589ef4(0x1c2,'fbii')],_0x165426[_0x589ef4(0x212,'n$(C')])){_0x165426['LOhRk'](_0x59ae4d,{'delaySeconds':delaySeconds,'format':downloadFormat,'folder':downloadFolder,'removeBackground':removeBackground,'autoPause':autoPause});return;}if(_0x165426['xGIAT'](_0x11241b[_0x589ef4(0x118,'bvI8')],_0x589ef4(0x21a,'![Gn'))){_0x165426[_0x589ef4(0x119,'8$ir')](retryItem,_0x11241b[_0x589ef4(0x24d,'1e$W')]),_0x165426['stTXv'](_0x59ae4d);return;}if(_0x165426[_0x589ef4(0x114,'Z4Q1')](_0x11241b[_0x589ef4(0xdb,'Z4Q1')],_0x589ef4(0x2fb,'n$(C'))){retryItem(_0x11241b['name']),_0x165426[_0x589ef4(0x266,'v$cJ')](_0x59ae4d);return;}if(_0x11241b[_0x589ef4(0x1e4,'INGy')]===_0x165426[_0x589ef4(0x207,'Mag2')]){const _0x1a2298=_0x165426[_0x589ef4(0x27a,'fTGf')]['split']('|');let _0x54e205=0x0;while(!![]){switch(_0x1a2298[_0x54e205++]){case'0':isPaused=!![];continue;case'1':workerTabId&&chrome[_0x589ef4(0x2a7,'Ou*7')][_0x589ef4(0x1e7,'I33y')](workerTabId,{'type':_0x165426[_0x589ef4(0x274,'#Fhz')]})['catch'](()=>{});continue;case'2':_0x59ae4d?.({'isPaused':isPaused});continue;case'3':return;case'4':_0x165426[_0x589ef4(0xdd,'PG@a')](broadcastQueue);continue;case'5':console['log'](_0x165426[_0x589ef4(0x149,'isQ8')]);continue;case'6':_0x165426[_0x589ef4(0x291,'f)vz')](persistQueueState);continue;}break;}}if(_0x165426['xGIAT'](_0x11241b[_0x589ef4(0x154,'I33y')],_0x589ef4(0x2f7,'IXoy'))){const _0x4cad2e=_0x165426['mYOTO'][_0x589ef4(0x10c,'*G%]')]('|');let _0x1e5279=0x0;while(!![]){switch(_0x4cad2e[_0x1e5279++]){case'0':_0x165426[_0x589ef4(0x169,'VTjY')](_0x59ae4d,{'isPaused':isPaused});continue;case'1':console[_0x589ef4(0x1f7,'INGy')](_0x589ef4(0xf1,'K$u)'));continue;case'2':isPaused=![];continue;case'3':return;case'4':chrome[_0x589ef4(0x1f1,'DmVb')][_0x589ef4(0x16c,'DmVb')]['remove'](_0x165426[_0x589ef4(0x2ce,'VTjY')]);continue;case'5':isRunning=![];continue;case'6':workerTabId&&chrome[_0x589ef4(0xe2,'*YkH')][_0x589ef4(0x245,'1e$W')](workerTabId,{'type':_0x165426[_0x589ef4(0x143,'G6Mi')]})[_0x589ef4(0x2de,'VTjY')](()=>{});continue;case'7':broadcastQueue();continue;case'8':chrome[_0x589ef4(0x29a,'3%3z')]['local'][_0x589ef4(0x120,'*YkH')](_0x165426[_0x589ef4(0xf4,'G6Mi')]);continue;case'9':chrome[_0x589ef4(0x1bb,'3%3z')][_0x589ef4(0x122,'8$ir')]('autoPauseResume');continue;case'10':autoPauseEndTime=null;continue;case'11':_0x165426[_0x589ef4(0x1b6,'DmVb')](kick);continue;}break;}}if(_0x165426['xGIAT'](_0x11241b[_0x589ef4(0x22c,'Mag2')],_0x165426[_0x589ef4(0x110,'tF(U')])){console['log'](_0x165426[_0x589ef4(0x1a7,'N&BQ')]),queue=[],isRunning=![],isPaused=![],processedCount=0x0,chrome[_0x589ef4(0xf2,'8$ir')][_0x589ef4(0x1ab,'8#*(')](_0x589ef4(0x259,'[dYf')),chrome[_0x589ef4(0x1f5,'fvJT')][_0x589ef4(0x2b3,'[dYf')][_0x589ef4(0x186,'kEt$')](_0x589ef4(0x1a3,']i*l')),chrome['storage'][_0x589ef4(0x2ab,'3%3z')][_0x589ef4(0x239,'K$u)')](_0x165426[_0x589ef4(0x277,'H%%B')]),chrome[_0x589ef4(0x123,'VTjY')]['local']['remove'](_0x165426['tlnKF']),autoPauseEndTime=null,broadcastQueue(),chrome['tabs'][_0x589ef4(0x1f8,'f)vz')]({'url':_0x589ef4(0x12b,'fbii')},_0x427eca=>{const _0x2a04ee=_0x589ef4,_0x6ea4fe={'NcESL':_0x165426['CNEjV']};_0x427eca[_0x2a04ee(0x106,'fbii')](_0x20d30f=>{const _0x22e0bd=_0x2a04ee;chrome[_0x22e0bd(0x12f,'[27N')][_0x22e0bd(0x243,'N&BQ')](_0x20d30f['id'],{'type':_0x6ea4fe['NcESL']})['catch'](()=>{});});}),workerTabId=null,_0x59ae4d?.();return;}if(_0x165426['wrZwy'](_0x11241b[_0x589ef4(0x164,'v$cJ')],_0x165426[_0x589ef4(0x147,'fvJT')])){_0x165426[_0x589ef4(0x16a,'fvJT')](_0x59ae4d,{'status':_0x165426['BfWjW']});return;}_0x165426[_0x589ef4(0x16f,'hIFl')](_0x59ae4d);});async function kick(){const _0x46c48e=a0_0x580085,_0x527d12={'VgzvJ':_0x46c48e(0x14d,'uDrj'),'Ckmzd':_0x46c48e(0xd7,'VTjY'),'PvGcF':'[kick]\x20Already\x20running,\x20returning','RItyk':_0x46c48e(0x258,']i*l'),'cRcHG':_0x46c48e(0x19c,'gqEi'),'oOsMi':_0x46c48e(0x117,'v$cJ'),'mnIVN':function(_0x513b3f,_0x57ac16){return _0x513b3f===_0x57ac16;},'yrEge':_0x46c48e(0x2da,'K$u)'),'EyHwk':function(_0x38cf21,_0x1ad7f6,_0x571d6f){return _0x38cf21(_0x1ad7f6,_0x571d6f);},'gjnpi':function(_0x1feedc){return _0x1feedc();},'EmOEH':_0x46c48e(0x2c4,'AkSw'),'cOjsP':_0x46c48e(0x113,'*YkH'),'Kitxv':_0x46c48e(0x24f,'fvJT'),'ElvmE':function(_0x2e29f0){return _0x2e29f0();},'dLubm':function(_0x4869df,_0x8cc04e){return _0x4869df+_0x8cc04e;},'xloNq':function(_0x41d4fb,_0x3efa7d,_0xa0de8b,_0x32c6e9,_0x23963f){return _0x41d4fb(_0x3efa7d,_0xa0de8b,_0x32c6e9,_0x23963f);},'HvWSF':function(_0x42e196,_0xb5dfad){return _0x42e196(_0xb5dfad);}};console[_0x46c48e(0x1fa,'M4vp')](_0x527d12[_0x46c48e(0x104,'Rr%M')],isRunning,_0x527d12[_0x46c48e(0x2b8,'tF(U')],isPaused,'queue.length:',queue[_0x46c48e(0xea,'Ou*7')]);if(isRunning){console[_0x46c48e(0x25b,'fTGf')](_0x527d12['PvGcF']);return;}if(isPaused){console['log'](_0x527d12['RItyk']);return;}const _0x3683d8=queue[_0x46c48e(0x160,'1e$W')](_0x3876c7=>_0x3876c7[_0x46c48e(0x132,'8$ir')]===_0x46c48e(0x295,'3%3z'));console[_0x46c48e(0x15d,'fvJT')](_0x46c48e(0x269,'fTGf'),_0x3683d8?_0x3683d8[_0x46c48e(0x24c,'DmVb')]:_0x46c48e(0x2b9,'3%3z')),console[_0x46c48e(0x1c6,'isQ8')](_0x527d12[_0x46c48e(0x2f2,'AkSw')],queue[_0x46c48e(0x142,'DmVb')](_0x888265=>_0x888265[_0x46c48e(0x1e2,'NS3v')]));if(!_0x3683d8){console[_0x46c48e(0xfc,'#Fhz')](_0x527d12[_0x46c48e(0x15c,'bvI8')]);return;}if(!_0x3683d8[_0x46c48e(0x2ff,'&cwQ')]||_0x527d12[_0x46c48e(0x152,'fTGf')](_0x3683d8[_0x46c48e(0x157,'8#*(')]['length'],0x0)){const _0x577786=_0x527d12[_0x46c48e(0x23e,'M4vp')][_0x46c48e(0x130,'uDrj')]('|');let _0x3f2b4d=0x0;while(!![]){switch(_0x577786[_0x3f2b4d++]){case'0':persistQueue();continue;case'1':_0x3683d8['status']=_0x46c48e(0xe4,'IXoy');continue;case'2':return;case'3':_0x527d12[_0x46c48e(0x17b,'hIFl')](setTimeout,()=>kick(),0x64);continue;case'4':_0x527d12[_0x46c48e(0x217,'3%3z')](broadcastQueue);continue;case'5':console[_0x46c48e(0x2e0,'@WBf')](_0x527d12[_0x46c48e(0x1e8,'PDRJ')],_0x3683d8['name']);continue;}break;}}console[_0x46c48e(0x2ac,'DPOW')](_0x527d12['cOjsP'],_0x3683d8[_0x46c48e(0x19d,'fvJT')]),_0x3683d8[_0x46c48e(0x14f,'tF(U')]=_0x527d12[_0x46c48e(0x2d3,'H%%B')],_0x527d12[_0x46c48e(0x244,'@WBf')](persistQueue),_0x527d12[_0x46c48e(0x27c,'fvJT')](broadcastQueue),isRunning=!![];const _0x1056f4=await ensureTab(),_0x4fe194=_0x527d12['dLubm'](queue[_0x46c48e(0x28d,'3%3z')](_0x58a38d=>_0x58a38d[_0x46c48e(0x1b8,'*YkH')]===_0x3683d8[_0x46c48e(0x268,'bvI8')]),0x1);await _0x527d12['xloNq'](sendProcessMessage,_0x1056f4['id'],_0x527d12['HvWSF'](stripData,_0x3683d8),_0x4fe194,queue[_0x46c48e(0x254,'Rr%M')]);}function a0_0x2be3(_0x2ce421,_0x306fc9){_0x2ce421=_0x2ce421-0xd5;const _0x3e6580=a0_0x17f4();let _0x23fbaa=_0x3e6580[_0x2ce421];if(a0_0x2be3['sxseDo']===undefined){var _0x49a219=function(_0x3bff3a){const _0x4ee931='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let _0x23cfad='',_0x8301f1='';for(let _0x446740=0x0,_0x444625,_0x4e9a5e,_0x2e23f3=0x0;_0x4e9a5e=_0x3bff3a['charAt'](_0x2e23f3++);~_0x4e9a5e&&(_0x444625=_0x446740%0x4?_0x444625*0x40+_0x4e9a5e:_0x4e9a5e,_0x446740++%0x4)?_0x23cfad+=String['fromCharCode'](0xff&_0x444625>>(-0x2*_0x446740&0x6)):0x0){_0x4e9a5e=_0x4ee931['indexOf'](_0x4e9a5e);}for(let _0x4a548e=0x0,_0x12816e=_0x23cfad['length'];_0x4a548e<_0x12816e;_0x4a548e++){_0x8301f1+='%'+('00'+_0x23cfad['charCodeAt'](_0x4a548e)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0x8301f1);};const _0x1e77ce=function(_0x863d5b,_0x165f27){let _0x5c1a7c=[],_0x436ab1=0x0,_0x3f0882,_0x553231='';_0x863d5b=_0x49a219(_0x863d5b);let _0x58cd9d;for(_0x58cd9d=0x0;_0x58cd9d<0x100;_0x58cd9d++){_0x5c1a7c[_0x58cd9d]=_0x58cd9d;}for(_0x58cd9d=0x0;_0x58cd9d<0x100;_0x58cd9d++){_0x436ab1=(_0x436ab1+_0x5c1a7c[_0x58cd9d]+_0x165f27['charCodeAt'](_0x58cd9d%_0x165f27['length']))%0x100,_0x3f0882=_0x5c1a7c[_0x58cd9d],_0x5c1a7c[_0x58cd9d]=_0x5c1a7c[_0x436ab1],_0x5c1a7c[_0x436ab1]=_0x3f0882;}_0x58cd9d=0x0,_0x436ab1=0x0;for(let _0x3dbac9=0x0;_0x3dbac9<_0x863d5b['length'];_0x3dbac9++){_0x58cd9d=(_0x58cd9d+0x1)%0x100,_0x436ab1=(_0x436ab1+_0x5c1a7c[_0x58cd9d])%0x100,_0x3f0882=_0x5c1a7c[_0x58cd9d],_0x5c1a7c[_0x58cd9d]=_0x5c1a7c[_0x436ab1],_0x5c1a7c[_0x436ab1]=_0x3f0882,_0x553231+=String['fromCharCode'](_0x863d5b['charCodeAt'](_0x3dbac9)^_0x5c1a7c[(_0x5c1a7c[_0x58cd9d]+_0x5c1a7c[_0x436ab1])%0x100]);}return _0x553231;};a0_0x2be3['VEvrYQ']=_0x1e77ce,a0_0x2be3['cxUTCJ']={},a0_0x2be3['sxseDo']=!![];}const _0x17f423=_0x3e6580[0x0],_0x2be303=_0x2ce421+_0x17f423,_0x19e92a=a0_0x2be3['cxUTCJ'][_0x2be303];return!_0x19e92a?(a0_0x2be3['QcDOVf']===undefined&&(a0_0x2be3['QcDOVf']=!![]),_0x23fbaa=a0_0x2be3['VEvrYQ'](_0x23fbaa,_0x306fc9),a0_0x2be3['cxUTCJ'][_0x2be303]=_0x23fbaa):_0x23fbaa=_0x19e92a,_0x23fbaa;}function stripData(_0x5bc01e){const _0x120d40=a0_0x580085;return{'name':_0x5bc01e[_0x120d40(0x2a4,'kEt$')],'type':_0x5bc01e[_0x120d40(0x279,'G6Mi')],'data':_0x5bc01e['data'],'width':_0x5bc01e[_0x120d40(0x1fc,'&cwQ')],'height':_0x5bc01e[_0x120d40(0xe5,'Z4Q1')]};}async function ensureTab(){const _0x262b2c=a0_0x580085,_0x4c4eba={'XSprL':_0x262b2c(0xef,'hIFl')};if(workerTabId)try{return await chrome[_0x262b2c(0x12f,'[27N')][_0x262b2c(0x2a2,'fTGf')](workerTabId);}catch(_0x2567a0){}const _0x1bf7ce=await chrome[_0x262b2c(0x2d8,'*qlw')][_0x262b2c(0x195,'hIFl')]({'url':_0x4c4eba[_0x262b2c(0x248,'AkSw')]});return workerTabId=_0x1bf7ce['id'],_0x1bf7ce;}function markDone(_0x55cbfa){const _0x7c58d=a0_0x580085,_0x4eab0e={'LRpTI':_0x7c58d(0x1eb,'kEt$'),'aXUDE':_0x7c58d(0x270,'f)vz'),'msjfV':_0x7c58d(0x2c1,'Ou*7'),'Lulog':_0x7c58d(0x1e6,'8$ir'),'derJW':function(_0x5f31a8,_0x720ef){return _0x5f31a8>=_0x720ef;},'NdPWk':_0x7c58d(0x1f6,'DmVb'),'TXjBo':_0x7c58d(0x210,'tF(U'),'ffMVp':_0x7c58d(0x1c4,'DPOW'),'RgIPO':'[markDone]\x20Queue\x20after\x20update:','cfYyk':function(_0x1552d4,_0x34e736){return _0x1552d4===_0x34e736;},'UzrKJ':_0x7c58d(0x13e,'1e$W'),'XhHvm':_0x7c58d(0x22e,'![Gn'),'DCYsG':_0x7c58d(0x1d6,'SEVC'),'ZtmqD':function(_0x3c31a4,_0x39d1e5){return _0x3c31a4+_0x39d1e5;},'UYfWg':function(_0x2e6c4f,_0x42385f){return _0x2e6c4f*_0x42385f;},'uObkV':function(_0x30d7d9,_0x379bd6){return _0x30d7d9*_0x379bd6;},'slBYL':'autoPauseResume','dTRSS':_0x7c58d(0x1f4,'NS3v'),'gTQLK':function(_0x135d8f){return _0x135d8f();},'ScUhJ':function(_0x539df7){return _0x539df7();},'VmGnC':_0x7c58d(0x286,'uDrj'),'NtfcJ':function(_0x17a418,_0x43826f){return _0x17a418>_0x43826f;},'FfXjz':'[markDone]\x20Long\x20wait\x20detected,\x20requesting\x20keep-alive\x20for','izlyk':'queue:wait','WSUxL':_0x7c58d(0x228,'uDrj'),'xAYvc':'ms\x20delay','UoAOt':function(_0x4a59f0,_0x3be2a2){return _0x4a59f0>_0x3be2a2;}};console['log'](_0x4eab0e[_0x7c58d(0x199,'fvJT')],_0x55cbfa[_0x7c58d(0x268,'bvI8')],_0x4eab0e['msjfV'],_0x55cbfa['status']),console[_0x7c58d(0x25b,'fTGf')](_0x4eab0e['Lulog'],queue[_0x7c58d(0x261,'bvI8')](_0x315f10=>_0x315f10[_0x7c58d(0x18a,'8$ir')]+':'+_0x315f10[_0x7c58d(0x26c,'1e$W')]));const _0x4df31e=queue['findIndex'](_0x917ad0=>_0x917ad0[_0x7c58d(0x107,'Ou*7')]===_0x55cbfa['name']);_0x4eab0e[_0x7c58d(0x2e7,'G6Mi')](_0x4df31e,0x0)?(queue[_0x4df31e]['status']=_0x55cbfa['status'],console['log'](_0x4eab0e[_0x7c58d(0x11f,'kEt$')]+_0x4df31e+_0x4eab0e[_0x7c58d(0x15e,'8$ir')],_0x55cbfa[_0x7c58d(0x1d9,'DPOW')]),persistQueue()):console[_0x7c58d(0x2cb,'Rr%M')](_0x4eab0e[_0x7c58d(0x197,'NS3v')]);console[_0x7c58d(0x26e,'![Gn')](_0x4eab0e[_0x7c58d(0x2fe,'fvJT')],queue[_0x7c58d(0x2ee,'@WBf')](_0x548c40=>_0x548c40[_0x7c58d(0x2ca,'3%3z')]+':'+_0x548c40[_0x7c58d(0x1f3,'^rAl')]));_0x4eab0e[_0x7c58d(0x146,'K$u)')](_0x55cbfa[_0x7c58d(0x27d,'T*GO')],_0x4eab0e[_0x7c58d(0x175,'Z4Q1')])&&_0x55cbfa[_0x7c58d(0x2bc,'Z4Q1')]&&downloadNameMap['set'](_0x55cbfa[_0x7c58d(0x189,'kEt$')],_0x55cbfa[_0x7c58d(0x268,'bvI8')]);if(_0x55cbfa[_0x7c58d(0x133,'*YkH')]===_0x4eab0e[_0x7c58d(0x162,'DmVb')]){processedCount++,console[_0x7c58d(0x18f,'^rAl')]('[markDone]\x20processedCount:',processedCount,_0x7c58d(0x1ef,'NS3v'),autoPause);if(autoPause['enabled']&&_0x4eab0e['derJW'](processedCount,autoPause['count'])){const _0x167518=queue[_0x7c58d(0x2e8,'bvI8')](_0x133d46=>_0x133d46[_0x7c58d(0x2b5,'uDrj')]===_0x7c58d(0x276,'bvI8'));if(!_0x167518)console[_0x7c58d(0x1cc,'hIFl')](_0x4eab0e[_0x7c58d(0x1ac,'^rAl')]),processedCount=0x0;else{console[_0x7c58d(0x25b,'fTGf')]('[markDone]\x20Auto-pause\x20triggered\x20after',processedCount,_0x4eab0e[_0x7c58d(0x137,'G6Mi')]),processedCount=0x0,isPaused=!![],isRunning=![],autoPauseEndTime=_0x4eab0e['ZtmqD'](Date[_0x7c58d(0x2d9,'f)vz')](),_0x4eab0e[_0x7c58d(0x242,'PDRJ')](_0x4eab0e[_0x7c58d(0x26d,'exRr')](autoPause[_0x7c58d(0x2ad,'kEt$')],0x3c),0x3e8)),chrome[_0x7c58d(0x232,'exRr')][_0x7c58d(0x238,'PG@a')]['set']({'autoPauseState':{'isPaused':!![],'endTime':autoPauseEndTime,'queue':queue[_0x7c58d(0x2ea,'M4vp')](_0x2b8f29=>({'name':_0x2b8f29[_0x7c58d(0x2dc,'exRr')],'type':_0x2b8f29[_0x7c58d(0x298,'f)vz')],'status':_0x2b8f29[_0x7c58d(0x1f3,'^rAl')],'size':_0x2b8f29[_0x7c58d(0x11c,'K$u)')]})),'workerTabId':workerTabId}}),chrome[_0x7c58d(0x156,'IXoy')][_0x7c58d(0x2df,'n$(C')](_0x4eab0e[_0x7c58d(0x203,'fbii')]),chrome[_0x7c58d(0xf2,'8$ir')][_0x7c58d(0x105,'[27N')](_0x4eab0e[_0x7c58d(0x126,'IXoy')],{'when':autoPauseEndTime}),console['log'](_0x4eab0e['dTRSS'],new Date(autoPauseEndTime)[_0x7c58d(0x11d,'Mag2')]()),_0x4eab0e[_0x7c58d(0x124,'#Fhz')](broadcastQueue),_0x4eab0e[_0x7c58d(0x230,'Rr%M')](broadcastQueue),chrome[_0x7c58d(0x14e,'gqEi')][_0x7c58d(0x1b9,'H%%B')]({'url':'*://*.vectorizer.ai/*'},_0x4ec8fd=>{const _0x55f436=_0x7c58d;_0x4ec8fd[_0x55f436(0x211,'fTGf')](_0x4f8087=>{const _0xebde1a=_0x55f436;chrome['tabs'][_0xebde1a(0x216,'Mag2')](_0x4f8087['id'],{'type':_0x4eab0e[_0xebde1a(0x1db,'^rAl')],'endTime':autoPauseEndTime})[_0xebde1a(0x204,'1e$W')](()=>{});});});return;}}}console['log'](_0x4eab0e[_0x7c58d(0x2b4,'PDRJ')],queue[_0x7c58d(0x256,'AkSw')]),_0x4eab0e[_0x7c58d(0x11b,'INGy')](broadcastQueue),isRunning=![];const _0x5184c1=queue[_0x7c58d(0x2e2,'AkSw')](_0x169f53=>_0x169f53[_0x7c58d(0x196,'v$cJ')]==='pending'||_0x169f53[_0x7c58d(0x2f5,'@WBf')]===_0x7c58d(0x1cd,'T*GO'));!_0x5184c1&&_0x4eab0e[_0x7c58d(0x2f9,'hIFl')](queue[_0x7c58d(0xea,'Ou*7')],0x0)&&(console[_0x7c58d(0x202,'IXoy')](_0x7c58d(0xe0,'NS3v')),chrome['storage'][_0x7c58d(0x121,'T*GO')]['remove']('persistedQueue'));const _0x2c63d8=_0x4eab0e[_0x7c58d(0x1ee,'bvI8')](delaySeconds,0x0)?_0x4eab0e[_0x7c58d(0x1bd,'![Gn')](delaySeconds,0x3e8):0x0;_0x2c63d8>0x4e20&&workerTabId&&(console['log'](_0x4eab0e[_0x7c58d(0x1ad,'DmVb')],_0x2c63d8,'ms'),chrome[_0x7c58d(0x289,'H%%B')][_0x7c58d(0x2a0,'@WBf')](workerTabId,{'type':_0x4eab0e[_0x7c58d(0x1ba,'n$(C')],'duration':_0x2c63d8})['catch'](()=>{}));console['log'](_0x4eab0e['WSUxL'],_0x2c63d8,_0x4eab0e[_0x7c58d(0x1ea,'N&BQ')]);if(_0x4eab0e[_0x7c58d(0x255,'INGy')](_0x2c63d8,0x0))setTimeout(()=>kick(),_0x2c63d8);else _0x4eab0e[_0x7c58d(0x124,'#Fhz')](kick);}function sanitizedQueue(){const _0xc92b55=a0_0x580085;return queue[_0xc92b55(0x2b0,'#Fhz')](({name:_0x5e8108,type:_0x58c31a,status:_0xb8fff4,data:_0x58dbd0,size:_0x4781b2})=>({'name':_0x5e8108,'type':_0x58c31a,'status':_0xb8fff4,'data':_0x58dbd0,'size':_0x4781b2}));}function broadcastQueue(){const _0x1e8675=a0_0x580085,_0x244352={'vPnPY':_0x1e8675(0x1a9,'kEt$'),'CVdTw':function(_0x55912a){return _0x55912a();}},_0x31b45c=queue[_0x1e8675(0x127,'IXoy')](_0x46f997=>_0x46f997[_0x1e8675(0x28b,'exRr')]==='processing'||_0x46f997[_0x1e8675(0x300,'fvJT')]===_0x1e8675(0x280,'DmVb')),_0x3c0907=_0x31b45c||isPaused;chrome[_0x1e8675(0x250,'Mag2')]['sendMessage']({'type':_0x244352[_0x1e8675(0x20c,'f)vz')],'queue':_0x244352[_0x1e8675(0x115,'tF(U')](sanitizedQueue),'delaySeconds':delaySeconds,'format':downloadFormat,'folder':downloadFolder,'removeBackground':removeBackground,'autoPause':autoPause,'autoPauseEndTime':autoPauseEndTime,'isProcessing':_0x3c0907,'isPaused':isPaused})[_0x1e8675(0x219,'T*GO')](()=>{});}function buildFilename(_0x22da45,_0x2014c2){const _0x573ccf=a0_0x580085,_0x205811={'JeVWN':_0x573ccf(0x150,'3%3z')};let _0x1630ac=_0x205811[_0x573ccf(0x11e,'IXoy')];try{const _0x162c8b=new URL(_0x2014c2),_0x2c2490=_0x162c8b[_0x573ccf(0x193,'DmVb')]||'',_0x5240fd=_0x2c2490['match'](/\.([a-zA-Z0-9]+)$/);_0x1630ac=_0x5240fd?_0x5240fd[0x1][_0x573ccf(0x21b,'*YkH')]():'svg';}catch(_0x101c9d){}const _0x53af99=_0x22da45['replace'](/\.[^.]+$/,'');return _0x53af99+'.'+_0x1630ac;}function isDownloadable(_0x335872){const _0xcca1e9=a0_0x580085;try{const _0x3f5257=new URL(_0x335872),_0x41d7cf=_0x3f5257[_0xcca1e9(0x240,'Mag2')][_0xcca1e9(0x125,'[27N')]();return/\.(svg|pdf|eps|dxf|png|jpg|jpeg)$/['test'](_0x41d7cf);}catch(_0x4a5516){return![];}}function sanitizeFolder(_0x202995){const _0x1926a2=a0_0x580085;let _0x25fe80=_0x202995[_0x1926a2(0x108,'uDrj')]()[_0x1926a2(0x292,'IXoy')](/^[\\/]+/,'')[_0x1926a2(0x288,'H%%B')](/(\.\.(?:\\|\/|$))/g,'');return _0x25fe80;}function persistConfig(){const _0x32021c=a0_0x580085;try{chrome[_0x32021c(0x1b3,'fTGf')][_0x32021c(0x2ab,'3%3z')][_0x32021c(0x18d,'Ou*7')]({'vectorizerConfig':{'delaySeconds':delaySeconds,'downloadFormat':downloadFormat,'downloadFolder':downloadFolder,'removeBackground':removeBackground,'autoPause':autoPause}});}catch(_0x55620b){}}function loadConfig(){const _0x4f1104=a0_0x580085,_0x5d57a6={'EcNbT':function(_0x184b48,_0x506ec7){return _0x184b48===_0x506ec7;},'llApH':_0x4f1104(0x299,'Rr%M'),'LjjSt':_0x4f1104(0x13d,'SEVC'),'nVosj':function(_0x570eba,_0x1bb5ef){return _0x570eba(_0x1bb5ef);},'apfSZ':function(_0x557c90,_0x5bf9cd){return _0x557c90===_0x5bf9cd;},'oWFNW':_0x4f1104(0x21d,'Mag2'),'XbWgB':function(_0x5047a5){return _0x5047a5();}};try{chrome[_0x4f1104(0x22d,'f)vz')][_0x4f1104(0x2be,'isQ8')][_0x4f1104(0xfa,'[27N')](['vectorizerConfig'],_0x38fbba=>{const _0x1f9afd=_0x4f1104;if(chrome[_0x1f9afd(0xe6,'fvJT')][_0x1f9afd(0x290,'f)vz')])return;const _0x5d5282=_0x38fbba?.[_0x1f9afd(0x214,'Rr%M')]||{};if(_0x5d57a6[_0x1f9afd(0x2bb,'G6Mi')](typeof _0x5d5282[_0x1f9afd(0x2e4,'Ou*7')],_0x1f9afd(0x1a6,'IXoy')))delaySeconds=_0x5d5282[_0x1f9afd(0x2c0,'SEVC')];if(_0x5d57a6[_0x1f9afd(0x218,'[dYf')](_0x5d5282[_0x1f9afd(0x2d1,'fvJT')],_0x1f9afd(0xfe,'N&BQ'))||_0x5d5282[_0x1f9afd(0x26a,'G6Mi')]===_0x5d57a6[_0x1f9afd(0xe8,'Rr%M')])downloadFormat=_0x5d5282['downloadFormat'];if(typeof _0x5d5282['downloadFolder']===_0x5d57a6[_0x1f9afd(0x1aa,'*G%]')])downloadFolder=_0x5d57a6[_0x1f9afd(0x2a8,'![Gn')](sanitizeFolder,_0x5d5282[_0x1f9afd(0x100,'I33y')]);if(_0x5d57a6['apfSZ'](typeof _0x5d5282[_0x1f9afd(0x224,'H%%B')],_0x5d57a6[_0x1f9afd(0x10b,'DPOW')]))removeBackground=_0x5d5282[_0x1f9afd(0x1cb,'hIFl')];_0x5d5282[_0x1f9afd(0x1dd,'PG@a')]&&(autoPause={'enabled':Boolean(_0x5d5282[_0x1f9afd(0x111,'tF(U')][_0x1f9afd(0x222,'Z4Q1')]),'count':parseInt(_0x5d5282[_0x1f9afd(0x1c3,'kEt$')][_0x1f9afd(0x165,'Rr%M')])||0xa,'minutes':_0x5d57a6['nVosj'](parseInt,_0x5d5282[_0x1f9afd(0x220,'T*GO')][_0x1f9afd(0x159,'fvJT')])||0x5}),_0x5d57a6[_0x1f9afd(0x247,'Rr%M')](broadcastQueue);});}catch(_0x537323){}}function registerDownloadHandler(){const _0x1d6f6f=a0_0x580085;if(chrome[_0x1d6f6f(0xff,'Mag2')]&&chrome[_0x1d6f6f(0x2fd,'G6Mi')][_0x1d6f6f(0x231,'PG@a')]['hasListener'](onDetermineFilename))return;chrome['downloads'][_0x1d6f6f(0x177,'1e$W')][_0x1d6f6f(0xd5,'I33y')](onDetermineFilename);}function loadAutoPauseState(){const _0x549acd=a0_0x580085,_0x2318e6={'hjmFG':_0x549acd(0x275,'AkSw'),'AEqzL':function(_0x4f4f58,_0x476e19){return _0x4f4f58>_0x476e19;},'LLXDx':_0x549acd(0x206,'isQ8'),'gCGPh':_0x549acd(0x29b,'AkSw'),'WOQuZ':_0x549acd(0x28c,'fbii'),'VUkXI':function(_0x25800c){return _0x25800c();},'xsJHk':_0x549acd(0x128,'T*GO'),'zHIRR':'autoPauseState','UCVGn':function(_0x50bde7){return _0x50bde7();},'sHnpq':function(_0x1930ad){return _0x1930ad();},'RYtDM':function(_0x41bdaf){return _0x41bdaf();},'JWmDc':_0x549acd(0x1de,'hIFl'),'HyEZi':_0x549acd(0x18c,'[27N')};chrome[_0x549acd(0x2bd,'T*GO')][_0x549acd(0x16c,'DmVb')]['get']([_0x2318e6[_0x549acd(0x166,'gqEi')]],_0x24112a=>{const _0x2faeac=_0x549acd;try{_0x24112a[_0x2faeac(0x1c7,'3%3z')]&&_0x24112a[_0x2faeac(0x2ec,'fvJT')][_0x2faeac(0x170,'gqEi')]&&(console[_0x2faeac(0x233,'G6Mi')](_0x2faeac(0x28a,'1e$W')),queue=_0x24112a[_0x2faeac(0x213,'[dYf')][_0x2faeac(0x187,'I33y')]||[],isPaused=!![],isRunning=![]);}catch(_0x269014){}try{chrome[_0x2faeac(0x1f2,'Mag2')][_0x2faeac(0x2d7,'K$u)')][_0x2faeac(0x16b,'M4vp')]([_0x2318e6[_0x2faeac(0x1d4,'*YkH')]],_0x2fb640=>{const _0x363a17=_0x2faeac;try{if(chrome[_0x363a17(0x1e3,'Ou*7')]['lastError'])return;const _0x2d3a51=_0x2fb640?.[_0x363a17(0x13c,'uDrj')];if(_0x2d3a51&&_0x2d3a51[_0x363a17(0x257,'hIFl')]&&_0x2d3a51[_0x363a17(0x20a,'fvJT')]){const _0x56b58a=Date[_0x363a17(0x293,'PDRJ')]();_0x2d3a51[_0x363a17(0x23a,'VTjY')]&&_0x2d3a51[_0x363a17(0x2dd,'uDrj')][_0x363a17(0x153,'&cwQ')]>0x0&&(queue=_0x2d3a51[_0x363a17(0x10a,'IXoy')],console[_0x363a17(0x1c6,'isQ8')](_0x363a17(0x28e,'PG@a'),queue[_0x363a17(0x2f3,'[27N')],_0x363a17(0x1b1,'SEVC')));_0x2d3a51[_0x363a17(0x260,'IXoy')]&&(workerTabId=_0x2d3a51[_0x363a17(0x138,'*G%]')],console['log'](_0x2318e6[_0x363a17(0x1ca,'IXoy')],workerTabId));if(_0x2318e6[_0x363a17(0x1a0,'@WBf')](_0x2d3a51[_0x363a17(0x2e5,'I33y')],_0x56b58a)){const _0x213393=_0x2318e6[_0x363a17(0x180,'G6Mi')][_0x363a17(0x2c6,'Mag2')]('|');let _0x2d5dea=0x0;while(!![]){switch(_0x213393[_0x2d5dea++]){case'0':chrome['alarms']['clear'](_0x363a17(0x1b2,'Mag2'));continue;case'1':chrome['alarms'][_0x363a17(0x14b,'fTGf')](_0x2318e6[_0x363a17(0x1a1,'@WBf')],{'when':_0x2d3a51[_0x363a17(0x22f,'M4vp')]});continue;case'2':isPaused=!![];continue;case'3':isRunning=![];continue;case'4':autoPauseEndTime=_0x2d3a51['endTime'];continue;case'5':console[_0x363a17(0x1a2,'NS3v')](_0x2318e6['WOQuZ'],new Date(_0x2d3a51[_0x363a17(0x2a3,'K$u)')])['toLocaleTimeString']());continue;case'6':_0x2318e6[_0x363a17(0x1b5,'kEt$')](broadcastQueue);continue;}break;}}else console[_0x363a17(0x1fa,'M4vp')](_0x2318e6[_0x363a17(0xdf,'NS3v')]),chrome['storage'][_0x363a17(0x25a,'[27N')][_0x363a17(0x1c5,'exRr')](_0x2318e6[_0x363a17(0x22a,'[27N')]),isPaused=![],autoPauseEndTime=null,isRunning=![],_0x2318e6[_0x363a17(0x25f,'isQ8')](broadcastQueue),_0x2318e6[_0x363a17(0x236,'![Gn')](kick);}else _0x2318e6['sHnpq'](broadcastQueue);}catch(_0x28667a){console[_0x363a17(0x233,'G6Mi')](_0x363a17(0x171,'*qlw'),_0x28667a);}finally{if(stateReadyPromiseResolve)_0x2318e6[_0x363a17(0x2f1,'fTGf')](stateReadyPromiseResolve);}});}catch(_0x16ba14){console['log'](_0x2318e6['JWmDc'],_0x16ba14);if(stateReadyPromiseResolve)_0x2318e6['VUkXI'](stateReadyPromiseResolve);}});}function persistQueueState(){const _0x5663b8=a0_0x580085;try{chrome[_0x5663b8(0xfd,'![Gn')][_0x5663b8(0x1fb,']i*l')][_0x5663b8(0x251,'kEt$')]({'manualPauseState':{'isPaused':!![],'queue':queue[_0x5663b8(0x200,'IXoy')](_0x58bded=>({'name':_0x58bded[_0x5663b8(0x158,'PG@a')],'type':_0x58bded['type'],'status':_0x58bded[_0x5663b8(0xf5,'n$(C')],'size':_0x58bded[_0x5663b8(0xda,'bvI8')]}))}});}catch(_0x107370){}}function onDetermineFilename(_0x3b11ff,_0x2b4a4f){const _0x2dea29=a0_0x580085,_0x4aa199={'nlAPx':function(_0x2f4e80,_0x18e476){return _0x2f4e80(_0x18e476);},'LPXvm':function(_0x3bf64f,_0x4d1fc5,_0x516e11){return _0x3bf64f(_0x4d1fc5,_0x516e11);},'dqvtA':function(_0x3ddee2,_0x2a211f){return _0x3ddee2(_0x2a211f);},'YwUYo':_0x2dea29(0x28f,'8#*('),'BFayv':_0x2dea29(0x1fe,'IXoy')};try{const _0x563d16=_0x3b11ff[_0x2dea29(0x155,'Mag2')]||_0x3b11ff['url']||'';if(!/vectorizer\.ai/['test'](_0x563d16))return;const _0x47a1cc=_0x4aa199['nlAPx'](getMappedName,_0x563d16);let _0x1f2fca;if(_0x47a1cc)_0x1f2fca=_0x4aa199[_0x2dea29(0xeb,'Z4Q1')](buildFilename,_0x47a1cc,_0x563d16);else{const _0x3180e2=_0x3b11ff['filename']||'';_0x1f2fca=downloadFolder?_0x3180e2['split'](/[\\/]/)[_0x2dea29(0x25c,'#Fhz')]():_0x3180e2;}const _0x1c3a0b=downloadFolder?downloadFolder+'/'+_0x1f2fca:_0x1f2fca;_0x4aa199[_0x2dea29(0x2f8,'M4vp')](_0x2b4a4f,{'filename':_0x1c3a0b,'conflictAction':_0x4aa199[_0x2dea29(0x235,'PDRJ')]}),console[_0x2dea29(0x2cb,'Rr%M')](_0x4aa199[_0x2dea29(0x1b7,'*G%]')],_0x1c3a0b);}catch(_0x4aa4b2){console[_0x2dea29(0x21f,'8#*(')](_0x2dea29(0x191,'PG@a'),_0x4aa4b2);}}function getMappedName(_0x31e0a4){const _0x41dfb7=a0_0x580085,_0x1f615f={'Mhheg':function(_0x531a5e,_0x15f317){return _0x531a5e+_0x15f317;}};if(downloadNameMap[_0x41dfb7(0x17a,'tF(U')](_0x31e0a4))return downloadNameMap[_0x41dfb7(0x27e,'DPOW')](_0x31e0a4);try{const _0x3869e6=new URL(_0x31e0a4),_0x5dcd5a=_0x1f615f['Mhheg'](_0x3869e6[_0x41dfb7(0x284,'DmVb')],_0x3869e6[_0x41dfb7(0x2e1,'I33y')]);return downloadNameMap['get'](_0x5dcd5a);}catch(_0x5e7c70){return null;}}function sendProcessMessage(_0x40fda7,_0x268721,_0x15b75d,_0x41d44f,_0x20a05e=0x0){const _0x34dcc2=a0_0x580085,_0x572f47={'hXrtz':_0x34dcc2(0x2a6,'8$ir'),'cclQF':function(_0x220c16,_0x5f4cb9){return _0x220c16<_0x5f4cb9;},'hsVQJ':function(_0x274c32,_0x159a89){return _0x274c32>=_0x159a89;},'wQQQO':function(_0x13154e){return _0x13154e();},'Xiyio':_0x34dcc2(0x103,'Mag2')};return new Promise(_0x2c6afc=>{const _0x35d18f=_0x34dcc2,_0x52e5ee={'DyhwX':_0x572f47[_0x35d18f(0x2ed,'INGy')],'rOpqH':function(_0x37c5eb,_0x14731e){const _0x74b6c9=_0x35d18f;return _0x572f47[_0x74b6c9(0x190,'IXoy')](_0x37c5eb,_0x14731e);},'gqtUq':function(_0x449cdb,_0x3fb80b){const _0x244dc3=_0x35d18f;return _0x572f47[_0x244dc3(0x249,'AkSw')](_0x449cdb,_0x3fb80b);},'JdVfu':function(_0x1796a7){return _0x572f47['wQQQO'](_0x1796a7);}};chrome[_0x35d18f(0x221,']i*l')]['sendMessage'](_0x40fda7,{'type':_0x572f47[_0x35d18f(0x194,'NS3v')],'item':_0x268721,'format':downloadFormat,'removeBackground':removeBackground,'meta':{'position':_0x15b75d,'total':_0x41d44f}},()=>{const _0x42a340=_0x35d18f;if(chrome[_0x42a340(0x192,'*qlw')][_0x42a340(0x1a5,'K$u)')]){console[_0x42a340(0x2af,'&cwQ')](_0x52e5ee[_0x42a340(0x285,'G6Mi')],chrome[_0x42a340(0x1e3,'Ou*7')][_0x42a340(0x2c2,'INGy')][_0x42a340(0xf0,'n$(C')]);if(_0x52e5ee[_0x42a340(0x16d,'Ou*7')](_0x20a05e,0x3))return setTimeout(()=>_0x2c6afc(sendProcessMessage(_0x40fda7,_0x268721,_0x15b75d,_0x41d44f,_0x20a05e+0x1)),0x1f4);else{const _0x4b2a0f=queue[_0x42a340(0x10e,'n$(C')](_0x275be0=>_0x275be0[_0x42a340(0x158,'PG@a')]===_0x268721[_0x42a340(0x26b,'Mag2')]);if(_0x52e5ee['gqtUq'](_0x4b2a0f,0x0))queue[_0x4b2a0f][_0x42a340(0x2c8,'*G%]')]=_0x42a340(0x20e,'f)vz');return isRunning=![],_0x52e5ee[_0x42a340(0x302,'NS3v')](_0x2c6afc);}}_0x52e5ee['JdVfu'](_0x2c6afc);});});}function retryItem(_0x2353a4){const _0x132fc3=a0_0x580085,_0x564a2a={'UveSq':function(_0x4c942c,_0x5236bb){return _0x4c942c>=_0x5236bb;},'LdUKb':_0x132fc3(0x1c9,'gqEi'),'nlFKN':function(_0x313b59){return _0x313b59();}},_0x57ebe8=queue[_0x132fc3(0x273,'Mag2')](_0x3dd254=>_0x3dd254['name']===_0x2353a4);_0x564a2a[_0x132fc3(0x1dc,'*YkH')](_0x57ebe8,0x0)&&(queue[_0x57ebe8][_0x132fc3(0x29c,'IXoy')]=_0x564a2a[_0x132fc3(0x184,'isQ8')],isRunning=![],_0x564a2a[_0x132fc3(0x21e,'DPOW')](broadcastQueue),_0x564a2a[_0x132fc3(0x301,'&cwQ')](kick));}
+let queue = [];
+let isRunning = false;
+let isPaused = false;
+let workerTabId = null;
+let delaySeconds = 5;
+let downloadFormat = 'eps';
+let downloadFolder = '';
+let removeBackground = false;
+let autoPause = { enabled: false, count: 10, minutes: 5 };
+let processedCount = 0; // Counter for processed images since last pause
+let autoPauseEndTime = null; // When the automatic pause ends
+let queueExplicitlyCancelled = false; // Flag to prevent persisting after cancellation
+const downloadNameMap = new Map();
+
+
+let stateReadyPromiseResolve;
+const stateReadyPromise = new Promise(resolve => stateReadyPromiseResolve = resolve);
+
+loadConfig();
+registerDownloadHandler();
+restoreQueueFromStorage(); // CRITICAL: Restore queue from storage on startup
+loadAutoPauseState(); // Loads auto-pause state if it exists
+
+// CRITICAL: Persist queue to storage to survive service worker restarts
+// NOTE: We do NOT persist binary data (q.data) to avoid quota exceeded errors
+// Binary data stays in memory only. If service worker restarts, queue will be lost.
+function persistQueue() {
+  try {
+    // Do NOT persist if queue was explicitly cancelled
+    if (queueExplicitlyCancelled) {
+      console.log('[persistQueue] Queue was cancelled, skipping persistence');
+      return;
+    }
+
+    // Do NOT persist empty queue (it was likely cancelled)
+    if (queue.length === 0) {
+      console.log('[persistQueue] Queue is empty, skipping persistence');
+      return;
+    }
+
+    chrome.storage.local.set({
+      persistedQueue: {
+        queue: queue.map(q => ({
+          name: q.name,
+          type: q.type,
+          status: q.status,
+          size: q.size,
+          // data: q.data, // REMOVED: Binary data causes quota exceeded error
+          width: q.width,
+          height: q.height
+        })),
+        isRunning,
+        isPaused,
+        workerTabId,
+        processedCount,
+        timestamp: Date.now()
+      }
+    });
+    console.log('[persistQueue] Queue saved with', queue.length, 'items (metadata only)');
+  } catch (e) {
+    console.log('[persistQueue] Error:', e);
+  }
+}
+
+// CRITICAL: Restore queue from storage when service worker starts
+// NOTE: Restored items will NOT have binary data, so they can only be displayed in UI
+// They will be skipped during processing (see kick() function)
+// IMPORTANT: We should NOT restore the queue if it will just be skipped anyway!
+function restoreQueueFromStorage() {
+  console.log('[restoreQueueFromStorage] ========== ATTEMPTING TO RESTORE QUEUE ==========');
+  chrome.storage.local.get(['persistedQueue'], (res) => {
+    try {
+      console.log('[restoreQueueFromStorage] Storage result:', res);
+      const state = res?.persistedQueue;
+      if (state && state.queue && state.queue.length > 0) {
+        // Only restore if timestamp is recent (less than 1 hour old)
+        const age = Date.now() - (state.timestamp || 0);
+        console.log('[restoreQueueFromStorage] Queue age:', age, 'ms (', Math.round(age / 1000), 'seconds)');
+        if (age < 3600000) { // 1 hour
+          // Check if there are any items still pending or processing
+          const hasPendingOrProcessing = state.queue.some(q => q.status === 'pending' || q.status === 'processing');
+
+          if (hasPendingOrProcessing) {
+            console.log('[restoreQueueFromStorage] ⚠️ Queue has pending/processing items but NO binary data');
+            console.log('[restoreQueueFromStorage] ⚠️ This means Service Worker was restarted during processing');
+            console.log('[restoreQueueFromStorage] ⚠️ Items would be skipped anyway, so NOT restoring queue');
+            console.log('[restoreQueueFromStorage] ⚠️ Clearing persisted queue to avoid confusion');
+            chrome.storage.local.remove('persistedQueue');
+          } else {
+            // Only "done" or "skipped" items - safe to restore for UI display
+            queue = state.queue;
+            isRunning = false;
+            isPaused = state.isPaused || false;
+            workerTabId = state.workerTabId;
+            processedCount = state.processedCount || 0;
+            console.log('[restoreQueueFromStorage] ✅ Restored queue with', queue.length, 'items (all completed)');
+            console.log('[restoreQueueFromStorage] Queue items:', queue.map(q => `${q.name}:${q.status}`));
+            broadcastQueue();
+          }
+        } else {
+          console.log('[restoreQueueFromStorage] ❌ Queue too old, clearing');
+          chrome.storage.local.remove('persistedQueue');
+        }
+      } else {
+        console.log('[restoreQueueFromStorage] ℹ️ No persisted queue found in storage');
+      }
+    } catch (e) {
+      console.log('[restoreQueueFromStorage] ❌ Error:', e);
+    }
+    console.log('[restoreQueueFromStorage] ========== RESTORE COMPLETE ==========');
+  });
+}
+
+
+// Listener for alarms (auto-pause)
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === 'autoPauseResume') {
+    // Wait for state to be restored
+    await stateReadyPromise;
+
+    console.log('[alarms] Auto-resume triggered');
+    console.log('[alarms] Current queue length:', queue.length);
+    console.log('[alarms] Current isPaused:', isPaused);
+    console.log('[alarms] Current isRunning:', isRunning);
+
+    // No need to restore the queue - it's still in memory
+    // (the service worker was not restarted if the queue exists)
+
+    isPaused = false;
+    isRunning = false;
+    autoPauseEndTime = null;
+
+    // Clears persistent state
+    chrome.storage.local.remove('autoPauseState');
+
+    broadcastQueue();
+
+    // Notifies ALL vectorizer tabs to ensure the countdown is cleared
+    // (workerTabId might be stale or the tab might have been reloaded)
+    console.log('[alarms] Sending resume to ALL vectorizer tabs...');
+    chrome.tabs.query({ url: '*://*.vectorizer.ai/*' }, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, { type: 'queue:resume' }).catch((e) => {
+          console.log('[alarms] Error sending to tab:', tab.id, e);
+        });
+      });
+    });
+
+    console.log('[alarms] Calling kick()...');
+    kick();
+  }
+});
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === 'queue:add') {
+    console.log('[queue:add] Received', msg.items?.length, 'items');
+
+    // Clears existing queue and resets state
+    queue = [];
+    isRunning = false;
+    isPaused = false;
+    processedCount = 0;
+    autoPauseEndTime = null;
+    queueExplicitlyCancelled = false; // Reset flag to allow persistence
+    chrome.alarms.clear('autoPauseResume');
+    chrome.storage.local.remove('autoPauseState');
+
+    // Adds new items
+    queue.push(...msg.items.map(it => ({ ...it, status: 'pending' })));
+
+    console.log('[queue:add] Queue now has', queue.length, 'items');
+    console.log('[queue:add] Queue items:', queue.map(q => q.name));
+
+    persistQueue(); // CRITICAL: Save queue to storage
+    broadcastQueue();
+    kick();
+    sendResponse?.();
+    return;
+  }
+  if (msg.type === 'poc:done') {
+    console.log('[background] ========== POC:DONE RECEIVED ==========');
+    console.log('[background] Received poc:done for:', msg.result?.name, 'status:', msg.result?.status);
+    console.log('[background] Current queue length:', queue.length, 'isRunning:', isRunning, 'isPaused:', isPaused);
+    console.log('[background] Queue items:', queue.map(q => `${q.name}:${q.status}`));
+
+    // CRITICAL: Send response IMMEDIATELY to keep port open
+    sendResponse?.({ received: true, timestamp: Date.now() });
+
+    markDone(msg.result);
+    console.log('[background] After markDone - isRunning:', isRunning, 'isPaused:', isPaused);
+    console.log('[background] ========== POC:DONE PROCESSED ==========');
+    return true; // Keep message channel open for async response
+  }
+  if (msg.type === 'queue:get') {
+    sendResponse?.({
+      queue: sanitizedQueue(),
+      delaySeconds,
+      format: downloadFormat,
+      folder: downloadFolder,
+      removeBackground,
+      autoPause,
+      autoPauseEndTime,
+      isProcessing: queue.some(q => q.status === 'processing' || q.status === 'pending') || isPaused,
+      isPaused
+    });
+    return;
+  }
+  if (msg.type === 'config:setDelay') {
+    delaySeconds = Math.max(0, Number(msg.seconds) || 0);
+    persistConfig();
+    sendResponse?.({ delaySeconds });
+    return;
+  }
+  if (msg.type === 'config:setFormat') {
+    const fmt = String(msg.format || '').toLowerCase();
+    if (fmt === 'eps' || fmt === 'svg') {
+      downloadFormat = fmt;
+    }
+    persistConfig();
+    sendResponse?.({ format: downloadFormat });
+    return;
+  }
+  if (msg.type === 'config:setFolder') {
+    downloadFolder = sanitizeFolder(String(msg.folder || ''));
+    persistConfig();
+    sendResponse?.({ folder: downloadFolder });
+    return;
+  }
+  if (msg.type === 'config:setRemoveBackground') {
+    removeBackground = Boolean(msg.removeBackground);
+    persistConfig();
+    sendResponse?.({ removeBackground });
+    return;
+  }
+  if (msg.type === 'config:setAutoPause') {
+    autoPause = {
+      enabled: Boolean(msg.autoPause?.enabled),
+      count: parseInt(msg.autoPause?.count) || 10,
+      minutes: parseInt(msg.autoPause?.minutes) || 5
+    };
+    persistConfig();
+    sendResponse?.({ autoPause });
+    return;
+  }
+  if (msg.type === 'config:get') {
+    sendResponse?.({ delaySeconds, format: downloadFormat, folder: downloadFolder, removeBackground, autoPause });
+    return;
+  }
+  if (msg.type === 'pricing:retry') {
+    retryItem(msg.name);
+    sendResponse?.();
+    return;
+  }
+  if (msg.type === 'poc:retry') {
+    retryItem(msg.name);
+    sendResponse?.();
+    return;
+  }
+  // Pause processing
+  if (msg.type === 'queue:pause') {
+    isPaused = true;
+    console.log('[background] queue paused');
+    broadcastQueue();
+    // Persist visual state to simple storage (prevents UI clearing on suspend)
+    persistQueueState(); // NEW: Saves queue structure
+
+    // Notifies the worker tab
+    if (workerTabId) {
+      chrome.tabs.sendMessage(workerTabId, { type: 'queue:pause' }).catch(() => { });
+    }
+    sendResponse?.({ isPaused });
+    return;
+  }
+  // Resume processing
+  if (msg.type === 'queue:resume') {
+    isPaused = false;
+    isRunning = false; // Resets to allow kick()
+    // Clears auto-pause alarm if it exists
+    chrome.alarms.clear('autoPauseResume');
+    chrome.storage.local.remove('autoPauseState');
+    chrome.storage.local.remove('manualPauseState'); // NEW: Clear manual pause state
+    autoPauseEndTime = null;
+    console.log('[background] queue resumed');
+    broadcastQueue();
+    // Notifies the worker tab
+    if (workerTabId) {
+      chrome.tabs.sendMessage(workerTabId, { type: 'queue:resume' }).catch(() => { });
+    }
+    kick(); // Continues processing
+    sendResponse?.({ isPaused });
+    return;
+  }
+  // Cancel and clear queue
+  if (msg.type === 'queue:cancel') {
+    console.log('[background] ========== QUEUE CANCEL REQUESTED ==========');
+    console.log('[background] Clearing queue with', queue.length, 'items');
+
+    // CRITICAL: Set flag to prevent persistQueue from saving empty queue
+    queueExplicitlyCancelled = true;
+
+    queue = [];
+    isRunning = false;
+    isPaused = false;
+    processedCount = 0; // Resets counter
+    workerTabId = null; // Resets workerTabId
+    autoPauseEndTime = null;
+
+    // Clears auto-pause alarm
+    chrome.alarms.clear('autoPauseResume');
+
+    // CRITICAL: Clear ALL storage related to queue
+    chrome.storage.local.remove(['persistedQueue', 'autoPauseState', 'manualPauseState'], () => {
+      console.log('[background] Storage cleared successfully');
+      if (chrome.runtime.lastError) {
+        console.log('[background] Error clearing storage:', chrome.runtime.lastError);
+      }
+    });
+
+    console.log('[background] Queue cleared, broadcasting update...');
+    broadcastQueue();
+
+    // Notifies ALL vectorizer tabs (not just workerTabId)
+    chrome.tabs.query({ url: '*://*.vectorizer.ai/*' }, (tabs) => {
+      console.log('[background] Notifying', tabs.length, 'vectorizer tabs to cancel');
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, { type: 'queue:cancel' }).catch(() => { });
+      });
+    });
+
+    console.log('[background] ========== QUEUE CANCEL COMPLETE ==========');
+    sendResponse?.();
+    return;
+  }
+  if (msg.type === 'keepAlive') {
+    // Just to keep the service worker awake
+    sendResponse?.({ status: 'alive' });
+    return;
+  }
+  sendResponse?.();
+});
+
+async function kick() {
+  console.log('[kick] Called. isRunning:', isRunning, 'isPaused:', isPaused, 'queue.length:', queue.length);
+
+  if (isRunning) {
+    console.log('[kick] Already running, returning');
+    return;
+  }
+  if (isPaused) {
+    console.log('[kick] Paused, returning');
+    return;
+  }
+
+  const next = queue.find(q => q.status === 'pending');
+  console.log('[kick] Next pending item:', next ? next.name : 'NONE');
+  console.log('[kick] Queue statuses:', queue.map(q => q.status));
+
+  if (!next) {
+    console.log('[kick] No pending items, returning');
+    return;
+  }
+
+  // Checks if the item has data (it might not if restored from storage)
+  if (!next.data || next.data.length === 0) {
+    console.log('[kick] Item without data, skipping:', next.name);
+    next.status = 'skipped'; // Marks as skipped
+    persistQueue(); // Save skipped status
+    broadcastQueue();
+    // Continues to the next
+    setTimeout(() => kick(), 100);
+    return;
+  }
+
+  console.log('[kick] Processing:', next.name);
+  next.status = 'processing';
+  persistQueue(); // CRITICAL: Save processing status before sending to content script
+  broadcastQueue();
+  isRunning = true;
+  const tab = await ensureTab();
+  const position = queue.findIndex(q => q.name === next.name) + 1;
+  await sendProcessMessage(tab.id, stripData(next), position, queue.length);
+}
+
+function stripData(item) {
+  return { name: item.name, type: item.type, data: item.data, width: item.width, height: item.height };
+}
+
+async function ensureTab() {
+  if (workerTabId) {
+    try { return await chrome.tabs.get(workerTabId); } catch (e) { /* recreate below */ }
+  }
+  const tab = await chrome.tabs.create({ url: 'https://pt.vectorizer.ai/' });
+  workerTabId = tab.id;
+  return tab;
+}
+
+function markDone(result) {
+  console.log('[markDone] START - result:', result.name, 'status:', result.status);
+  console.log('[markDone] Queue before:', queue.map(q => `${q.name}:${q.status}`));
+
+  const idx = queue.findIndex(q => q.name === result.name);
+  if (idx >= 0) {
+    queue[idx].status = result.status;
+    console.log('[markDone] Updated queue[' + idx + '] to status:', result.status);
+    persistQueue(); // CRITICAL: Save updated queue to storage
+  } else {
+    console.log('[markDone] WARNING: Item not found in queue!');
+  }
+
+  console.log('[markDone] Queue after update:', queue.map(q => `${q.name}:${q.status}`));
+
+  // Only registers the URL to override name/folder when the site starts the download.
+  if (result.status === 'done' && result.downloadUrl) {
+    downloadNameMap.set(result.downloadUrl, result.name);
+  }
+
+  // Increments counter if completed successfully
+  if (result.status === 'done') {
+    processedCount++;
+    console.log('[markDone] processedCount:', processedCount, 'autoPause:', autoPause);
+
+    // Checks if it should auto-pause
+    if (autoPause.enabled && processedCount >= autoPause.count) {
+      // Checks if there are still pending items in the queue
+      const hasPendingItems = queue.some(q => q.status === 'pending');
+
+      if (!hasPendingItems) {
+        console.log('[markDone] Auto-pause triggered but no pending items, skipping pause');
+        processedCount = 0; // Resets counter anyway
+      } else {
+        console.log('[markDone] Auto-pause triggered after', processedCount, 'images');
+        processedCount = 0; // Resets counter
+        isPaused = true;
+        isRunning = false; // Resets to allow kick() on timer
+        autoPauseEndTime = Date.now() + (autoPause.minutes * 60 * 1000);
+
+        // Persists pause state AND the queue to survive service worker restarts
+        chrome.storage.local.set({
+          autoPauseState: {
+            isPaused: true,
+            endTime: autoPauseEndTime,
+            queue: queue.map(q => ({ name: q.name, type: q.type, status: q.status, size: q.size })), // Without data (too large)
+            workerTabId
+          }
+        });
+
+        // Schedules automatic resume using chrome.alarms (persists even if worker suspends)
+        chrome.alarms.clear('autoPauseResume');
+        chrome.alarms.create('autoPauseResume', {
+          when: autoPauseEndTime
+        });
+        console.log('[markDone] Alarm set for', new Date(autoPauseEndTime).toLocaleTimeString());
+
+        broadcastQueue();
+        // Notifies the worker tab about the pause
+        broadcastQueue();
+        // Notifies ALL vectorizer tabs about the pause to ensure Keep-Alive starts
+        chrome.tabs.query({ url: '*://*.vectorizer.ai/*' }, (tabs) => {
+          tabs.forEach(tab => {
+            chrome.tabs.sendMessage(tab.id, { type: 'queue:autoPause', endTime: autoPauseEndTime }).catch(() => { });
+          });
+        });
+        return; // Does not call kick(), remains paused
+      }
+    }
+  }
+
+  console.log('[markDone] About to broadcast and kick. Queue length:', queue.length);
+  console.log('[markDone] Queue after all processing:', queue.map(q => `${q.name}:${q.status}`));
+  broadcastQueue();
+  isRunning = false;
+
+  // Check if all items are done - if so, clear persisted queue
+  const hasPendingOrProcessing = queue.some(q => q.status === 'pending' || q.status === 'processing');
+  console.log('[markDone] hasPendingOrProcessing:', hasPendingOrProcessing);
+  if (!hasPendingOrProcessing && queue.length > 0) {
+    console.log('[markDone] All items done, clearing persisted queue');
+    chrome.storage.local.remove('persistedQueue');
+  }
+
+  const waitMs = delaySeconds > 0 ? delaySeconds * 1000 : 0;
+  console.log('[markDone] Delay configured:', delaySeconds, 'seconds =', waitMs, 'ms');
+
+  // Se o tempo de espera for longo, pede para a aba manter o worker vivo
+  if (waitMs > 20000 && workerTabId) {
+    console.log('[markDone] Long wait detected, requesting keep-alive for', waitMs, 'ms');
+    chrome.tabs.sendMessage(workerTabId, { type: 'queue:wait', duration: waitMs }).catch(() => { });
+  }
+
+  console.log('[markDone] ========== CALLING KICK AFTER', waitMs, 'ms ==========');
+  if (waitMs > 0) setTimeout(() => kick(), waitMs); else kick();
+}
+
+function sanitizedQueue() {
+  return queue.map(({ name, type, status, data, size }) => ({ name, type, status, data, size }));
+}
+
+function broadcastQueue() {
+  const hasPendingOrProcessing = queue.some(q => q.status === 'processing' || q.status === 'pending');
+  // isProcessing is true if there are items in the queue OR if it's paused (to keep buttons active)
+  const isProcessingOrPaused = hasPendingOrProcessing || isPaused;
+  chrome.runtime.sendMessage({
+    type: 'queue:update',
+    queue: sanitizedQueue(),
+    delaySeconds,
+    format: downloadFormat,
+    folder: downloadFolder,
+    removeBackground,
+    autoPause,
+    autoPauseEndTime,
+    isProcessing: isProcessingOrPaused,
+    isPaused
+  }).catch(() => { /* popup closed, ignore */ });
+}
+
+function buildFilename(originalName, downloadUrl) {
+  let urlExt = 'svg';
+  try {
+    const parsed = new URL(downloadUrl);
+    const urlPath = parsed.pathname || '';
+    const urlExtMatch = urlPath.match(/\.([a-zA-Z0-9]+)$/);
+    urlExt = urlExtMatch ? urlExtMatch[1].toLowerCase() : 'svg';
+  } catch (_) {
+    // keep default
+  }
+  const base = originalName.replace(/\.[^.]+$/, '');
+  return `${base}.${urlExt}`;
+}
+
+function isDownloadable(url) {
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname.toLowerCase();
+    return /\.(svg|pdf|eps|dxf|png|jpg|jpeg)$/.test(path);
+  } catch (_) {
+    return false;
+  }
+}
+
+function sanitizeFolder(input) {
+  let clean = input.trim().replace(/^[\\/]+/, '').replace(/(\.\.(?:\\|\/|$))/g, '');
+  return clean;
+}
+
+function persistConfig() {
+  try {
+    chrome.storage.local.set({
+      vectorizerConfig: {
+        delaySeconds,
+        downloadFormat,
+        downloadFolder,
+        removeBackground,
+        autoPause
+      }
+    });
+  } catch (e) {
+    // ignore
+  }
+}
+
+function loadConfig() {
+  try {
+    chrome.storage.local.get(['vectorizerConfig'], (res) => {
+      if (chrome.runtime.lastError) return;
+      const cfg = res?.vectorizerConfig || {};
+      if (typeof cfg.delaySeconds === 'number') delaySeconds = cfg.delaySeconds;
+      if (cfg.downloadFormat === 'svg' || cfg.downloadFormat === 'eps') downloadFormat = cfg.downloadFormat;
+      if (typeof cfg.downloadFolder === 'string') downloadFolder = sanitizeFolder(cfg.downloadFolder);
+      if (typeof cfg.removeBackground === 'boolean') removeBackground = cfg.removeBackground;
+      if (cfg.autoPause) {
+        autoPause = {
+          enabled: Boolean(cfg.autoPause.enabled),
+          count: parseInt(cfg.autoPause.count) || 10,
+          minutes: parseInt(cfg.autoPause.minutes) || 5
+        };
+      }
+      broadcastQueue();
+    });
+  } catch (e) {
+    // ignore
+  }
+}
+
+function registerDownloadHandler() {
+  if (chrome.downloads && chrome.downloads.onDeterminingFilename.hasListener(onDetermineFilename)) return;
+  chrome.downloads.onDeterminingFilename.addListener(onDetermineFilename);
+}
+
+// Load persisted auto-pause state
+function loadAutoPauseState() {
+  // First, check general Manual Pause state (Pricing/User pause)
+  chrome.storage.local.get(['manualPauseState'], (res) => {
+    try {
+      if (res.manualPauseState && res.manualPauseState.queue) {
+        console.log('[loadAutoPauseState] Found manualPauseState, restoring visual queue...');
+        queue = res.manualPauseState.queue || [];
+        isPaused = true;
+        isRunning = false;
+      }
+    } catch (_) { }
+
+    // Then check Auto Pause state (overrides if exists)
+    try {
+      chrome.storage.local.get(['autoPauseState'], (res) => {
+        // Must resolve the promise regardless of outcome
+        try {
+          if (chrome.runtime.lastError) return;
+          const state = res?.autoPauseState;
+          if (state && state.isPaused && state.endTime) {
+            const now = Date.now();
+
+            // Restore queue and workerTabId if they exist
+            if (state.queue && state.queue.length > 0) {
+              queue = state.queue;
+              console.log('[loadAutoPauseState] Restored queue with', queue.length, 'items');
+            }
+            if (state.workerTabId) {
+              workerTabId = state.workerTabId;
+              console.log('[loadAutoPauseState] Restored workerTabId:', workerTabId);
+            }
+
+            if (state.endTime > now) {
+              // Pause is still active
+              console.log('[loadAutoPauseState] Restoring auto-pause state, ends at', new Date(state.endTime).toLocaleTimeString());
+              isPaused = true;
+              autoPauseEndTime = state.endTime;
+              isRunning = false;
+              // Recreates the alarm
+              chrome.alarms.clear('autoPauseResume');
+              chrome.alarms.create('autoPauseResume', {
+                when: state.endTime
+              });
+              broadcastQueue();
+            } else {
+              // Already expired, clears and resumes
+              console.log('[loadAutoPauseState] Auto-pause expired, resuming...');
+              chrome.storage.local.remove('autoPauseState');
+              isPaused = false;
+              autoPauseEndTime = null;
+              isRunning = false;
+              broadcastQueue();
+              kick();
+            }
+          } else {
+            // If no auto-pause, verify broadcast for manual pause
+            broadcastQueue();
+          }
+        } catch (innerErr) {
+          console.log('[loadAutoPauseState] inner error', innerErr);
+        } finally {
+          if (stateReadyPromiseResolve) stateReadyPromiseResolve();
+        }
+      });
+    } catch (e) {
+      console.log('[loadAutoPauseState] error', e);
+      if (stateReadyPromiseResolve) stateReadyPromiseResolve();
+    }
+  });
+}
+
+function persistQueueState() {
+  try {
+    chrome.storage.local.set({
+      manualPauseState: {
+        isPaused: true,
+        queue: queue.map(q => ({ name: q.name, type: q.type, status: q.status, size: q.size })) // Light backup
+      }
+    });
+  } catch (_) { }
+}
+
+function onDetermineFilename(item, suggest) {
+  try {
+    const url = item.finalUrl || item.url || '';
+    if (!/vectorizer\.ai/.test(url)) return;
+
+    // If there's a mapping, uses the original name; otherwise, reuses the name suggested by the site.
+    const mappedName = getMappedName(url);
+    let fname;
+    if (mappedName) {
+      fname = buildFilename(mappedName, url);
+    } else {
+      // fallback: use filename suggested by site
+      const suggested = item.filename || '';
+      fname = downloadFolder ? suggested.split(/[\\/]/).pop() : suggested;
+    }
+
+    const path = downloadFolder ? `${downloadFolder}/${fname}` : fname;
+    suggest({ filename: path, conflictAction: 'uniquify' });
+    console.log('[Vectorizer-Ext] overriding filename', path);
+  } catch (e) {
+    console.log('[Vectorizer-Ext] onDetermineFilename error', e);
+  }
+}
+
+function getMappedName(url) {
+  if (downloadNameMap.has(url)) return downloadNameMap.get(url);
+  // try to match without querystring
+  try {
+    const parsed = new URL(url);
+    const key = parsed.origin + parsed.pathname;
+    return downloadNameMap.get(key);
+  } catch (_) {
+    return null;
+  }
+}
+
+function sendProcessMessage(tabId, item, position, total, attempt = 0) {
+  console.log('[sendProcessMessage] ========== SENDING POC:PROCESS ==========');
+  console.log('[sendProcessMessage] TabId:', tabId);
+  console.log('[sendProcessMessage] File:', item.name);
+  console.log('[sendProcessMessage] Position:', position, '/', total);
+  console.log('[sendProcessMessage] Attempt:', attempt);
+  console.log('[sendProcessMessage] ==========================================');
+
+  return new Promise((resolve) => {
+    chrome.tabs.sendMessage(tabId, { type: 'poc:process', item, format: downloadFormat, removeBackground, meta: { position, total } }, () => {
+      if (chrome.runtime.lastError) {
+        console.log('[sendProcessMessage] ERROR:', chrome.runtime.lastError.message);
+        if (attempt < 3) {
+          console.log('[sendProcessMessage] Retrying... (attempt', attempt + 1, ')');
+          return setTimeout(() => resolve(sendProcessMessage(tabId, item, position, total, attempt + 1)), 500);
+        } else {
+          console.log('[sendProcessMessage] Max retries reached, marking as pending');
+          // refile to pending so it can retry later
+          const idx = queue.findIndex(q => q.name === item.name);
+          if (idx >= 0) queue[idx].status = 'pending';
+          isRunning = false;
+          return resolve();
+        }
+      }
+      console.log('[sendProcessMessage] Message sent successfully!');
+      resolve();
+    });
+  });
+}
+
+function retryItem(name) {
+  const idx = queue.findIndex(q => q.name === name);
+  if (idx >= 0) {
+    queue[idx].status = 'pending';
+    isRunning = false;
+    broadcastQueue();
+    kick();
+  }
+}

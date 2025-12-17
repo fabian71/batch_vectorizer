@@ -8,7 +8,7 @@ const LOCALES = {
             subtitle: "Process multiple images automatically",
             dropzone: "Drag images here or",
             selectFiles: "Select files",
-            warning: "Limit: 3MB per file, 12MB total. Larger files may cause errors.",
+            warning: "Limit: 2MB per file, 12MB total. Larger files may cause errors.",
             queue: "Processing queue",
             processed: "processed",
             of: "of",
@@ -54,7 +54,7 @@ const LOCALES = {
             step1AddImage: "1. Add image manually",
             step2SolveCaptcha: "2. Solve captcha",
             step3ClickResume: "3. Click \"Resume\" in extension",
-            fileTooLarge: "File too large! Maximum 3MB per file:",
+            fileTooLarge: "File too large! Maximum 2MB per file:",
             totalTooLarge: "Total size too large! {size}MB exceeds the 12MB limit. Use fewer or smaller files.",
             serializationError: "Error processing files. Try with smaller files."
         }
@@ -67,7 +67,7 @@ const LOCALES = {
             subtitle: "Processe múltiplas imagens automaticamente",
             dropzone: "Arraste imagens aqui ou",
             selectFiles: "Selecionar arquivos",
-            warning: "Limite: 3MB por arquivo, 12MB total. Arquivos maiores podem causar erros.",
+            warning: "Limite: 2MB por arquivo, 12MB total. Arquivos maiores podem causar erros.",
             queue: "Fila de processamento",
             processed: "processados",
             of: "de",
@@ -113,7 +113,7 @@ const LOCALES = {
             step1AddImage: "1. Adicione a imagem manualmente",
             step2SolveCaptcha: "2. Resolva o captcha",
             step3ClickResume: "3. Clique em \"Continuar\" na extensao",
-            fileTooLarge: "Arquivo muito grande! Maximo de 3MB por arquivo:",
+            fileTooLarge: "Arquivo muito grande! Maximo de 2MB por arquivo:",
             totalTooLarge: "Tamanho total muito grande! {size}MB excede o limite de 12MB. Use menos arquivos ou arquivos menores.",
             serializationError: "Erro ao processar arquivos. Tente com arquivos menores."
         }
@@ -126,7 +126,7 @@ const LOCALES = {
             subtitle: "Procesa múltiples imágenes automáticamente",
             dropzone: "Arrastra imágenes aquí o",
             selectFiles: "Seleccionar archivos",
-            warning: "Limite: 3MB por archivo, 12MB total. Archivos mas grandes pueden causar errores.",
+            warning: "Limite: 2MB por archivo, 12MB total. Archivos mas grandes pueden causar errores.",
             queue: "Cola de procesamiento",
             processed: "procesados",
             of: "de",
@@ -172,7 +172,7 @@ const LOCALES = {
             step1AddImage: "1. Anadir imagen manualmente",
             step2SolveCaptcha: "2. Resolver captcha",
             step3ClickResume: "3. Haga clic en \"Continuar\" en la extension",
-            fileTooLarge: "Archivo demasiado grande! Maximo 3MB por archivo:",
+            fileTooLarge: "Archivo demasiado grande! Maximo 2MB por archivo:",
             totalTooLarge: "Tamano total demasiado grande! {size}MB excede el limite de 12MB. Use menos archivos o archivos mas pequenos.",
             serializationError: "Error al procesar archivos. Intente con archivos mas pequenos."
         }

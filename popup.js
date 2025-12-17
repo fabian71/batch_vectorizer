@@ -597,8 +597,18 @@ cancelBtn.addEventListener('click', () => {
 // Clear Queue Button
 if (clearQueueBtn) {
   clearQueueBtn.addEventListener('click', () => {
+    // Clear local files
     files = [];
     renderLocalSelection();
+
+    // CRITICAL: Also clear the queue in the background
+    chrome.runtime.sendMessage({ type: 'queue:cancel' }, () => {
+      console.log('[popup] Queue cleared in background');
+      // Reset local state
+      isPaused = false;
+      isProcessing = false;
+      updateControlButtons();
+    });
   });
 
   // Hover effect
