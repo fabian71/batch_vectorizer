@@ -63,6 +63,7 @@ chrome.runtime.onMessage.addListener((msg) => {
     log('[content] Overlay exists:', overlayEl ? 'YES' : 'NO');
     log('[content] Setting abort flag and removing overlay...');
     shouldAbortProcessing = true; // Abort any ongoing processing
+    stopKeepAlive(); // Stop keep-alive pings when queue is cancelled
     removeOverlay();
     log('[content] ========== CANCEL COMPLETE ==========');
     return;
@@ -751,6 +752,10 @@ function sendDone(name, status, downloadUrl, err, meta = {}) {
 
     log('[sendDone]', name, status, 'position:', meta?.position, 'total:', meta?.total);
 
+    // Check if this is the last image in the queue
+    const isLastImage = meta?.position && meta?.total && parseInt(meta.position) >= parseInt(meta.total);
+    log('[sendDone] isLastImage:', isLastImage);
+
     // Envia mensagem SIMPLES - sem retry
     chrome.runtime.sendMessage({
       type: 'poc:done',
@@ -763,8 +768,14 @@ function sendDone(name, status, downloadUrl, err, meta = {}) {
         log('[sendDone] Success, response:', response);
       }
 
-      // CRITICAL: Stop keep-alive pings AFTER message is sent
-      stopKeepAlive();
+      // CRITICAL: Only stop keep-alive if this is the LAST image
+      // Otherwise, keep pinging to prevent Service Worker from suspending during delay
+      if (isLastImage) {
+        log('[sendDone] Last image processed, stopping keep-alive');
+        stopKeepAlive();
+      } else {
+        log('[sendDone] More images pending, keeping keep-alive active');
+      }
     });
 
     // Marca overlay como completo se for o último arquivo
@@ -774,8 +785,11 @@ function sendDone(name, status, downloadUrl, err, meta = {}) {
     hideOverlay();
   } catch (e) {
     log('[sendDone] error', e);
-    // Stop keep-alive on error too
-    stopKeepAlive();
+    // Only stop keep-alive on error if it's the last image
+    const isLastImage = meta?.position && meta?.total && parseInt(meta.position) >= parseInt(meta.total);
+    if (isLastImage) {
+      stopKeepAlive();
+    }
   }
 }
 

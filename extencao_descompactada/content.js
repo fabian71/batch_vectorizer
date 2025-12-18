@@ -1,6 +1,7 @@
 let pricingHandled = false;
 let pricingRedirected = false;
 let isRedirecting = false;
+let shouldAbortProcessing = false; // Flag to abort current processing when paused
 
 // Initialization function - called at the end of the script
 function initContentScript() {
@@ -44,27 +45,41 @@ function checkPauseState() {
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'poc:process') {
+    log('[onMessage] ========== POC:PROCESS RECEIVED ==========');
+    log('[onMessage] File:', msg.item?.name);
+    log('[onMessage] Format:', msg.format);
+    log('[onMessage] Meta:', msg.meta);
+    log('[onMessage] RemoveBackground:', msg.removeBackground);
+    log('[onMessage] Current overlay state:', overlayEl ? 'exists' : 'null');
+    log('[onMessage] ========================================');
     processFile(msg.item, msg.format || 'eps', msg.meta || {}, msg.removeBackground || false);
     return;
   }
 
+
   // Cancelar - remove a div flutuante
   if (msg.type === 'queue:cancel') {
-    log('[content] queue cancelled - removing overlay');
+    log('[content] ========== QUEUE CANCEL RECEIVED ==========');
+    log('[content] Overlay exists:', overlayEl ? 'YES' : 'NO');
+    log('[content] Setting abort flag and removing overlay...');
+    shouldAbortProcessing = true; // Abort any ongoing processing
     removeOverlay();
+    log('[content] ========== CANCEL COMPLETE ==========');
     return;
   }
 
   // Pausar - atualiza status na div flutuante
   if (msg.type === 'queue:pause') {
-    log('[content] queue paused');
+    log('[content] queue paused - setting abort flag');
+    shouldAbortProcessing = true; // Signal to abort current processing
     updateOverlayPaused(true);
     return;
   }
 
   // Continuar - atualiza status na div flutuante
   if (msg.type === 'queue:resume') {
-    log('[content] queue resumed');
+    log('[content] queue resumed - clearing abort flag');
+    shouldAbortProcessing = false; // Clear abort flag
 
     // Explicitly reset the position text (remove "Resuming...", restore "Image X of Y")
     // Retrieve stored meta if possible or just wait for next update
@@ -128,6 +143,9 @@ function stopKeepAlive() {
 
 async function processFile(item, format = 'eps', meta = {}, removeBackground = false) {
   try {
+    // Reset abort flag at start of new processing
+    shouldAbortProcessing = false;
+
     // Start keep-alive to prevent service worker suspension
     startKeepAlive();
 
@@ -156,6 +174,13 @@ async function processFile(item, format = 'eps', meta = {}, removeBackground = f
     let input = null;
     let inputAttempts = 0;
     while (!input && inputAttempts < 20) {
+      // Check abort flag
+      if (shouldAbortProcessing) {
+        log('[processFile] ABORTED while waiting for input');
+        stopKeepAlive();
+        return;
+      }
+
       input = document.querySelector('#FileInput-Field') || document.querySelector('input[type="file"]');
       if (!input) {
         log('[processFile] waiting for upload input... attempt', inputAttempts + 1);
@@ -168,6 +193,13 @@ async function processFile(item, format = 'eps', meta = {}, removeBackground = f
       log('[processFile] upload input not found after 10 seconds');
       stopKeepAlive(); // Stop keep-alive before retry
       requestRetry(item.name);
+      return;
+    }
+
+    // Check abort flag before uploading
+    if (shouldAbortProcessing) {
+      log('[processFile] ABORTED before upload');
+      stopKeepAlive();
       return;
     }
 
@@ -184,6 +216,13 @@ async function processFile(item, format = 'eps', meta = {}, removeBackground = f
     // Aguarda um pouco e verifica se algo mudou na página
     await delay(1000);
 
+    // Check abort flag
+    if (shouldAbortProcessing) {
+      log('[processFile] ABORTED after upload');
+      stopKeepAlive();
+      return;
+    }
+
     // Tenta novamente se não houver indicação de processamento
     const processingIndicator = document.querySelector('.progress, [class*="progress"], [class*="loading"], [class*="upload"]');
     if (!processingIndicator) {
@@ -192,9 +231,23 @@ async function processFile(item, format = 'eps', meta = {}, removeBackground = f
       await delay(500);
     }
 
+    // Check abort flag before waiting for download button
+    if (shouldAbortProcessing) {
+      log('[processFile] ABORTED before waiting for download button');
+      stopKeepAlive();
+      return;
+    }
+
     // Aguarda o botão de download aparecer (indica que a imagem foi processada)
     let downloadBtn = await waitForDownloadButton();
     let currentDownloadUrl = downloadBtn?.href || null;
+
+    // Check abort flag after download button appears
+    if (shouldAbortProcessing) {
+      log('[processFile] ABORTED after download button appeared - NOT clicking download');
+      stopKeepAlive();
+      return;
+    }
 
     // Se removeBackground estiver ativo, executa o fluxo de remoção de fundo
     if (removeBackground) {
@@ -209,11 +262,25 @@ async function processFile(item, format = 'eps', meta = {}, removeBackground = f
         return;
       }
 
+      // Check abort flag
+      if (shouldAbortProcessing) {
+        log('[processFile] ABORTED during background removal');
+        stopKeepAlive();
+        return;
+      }
+
       // Após remover o fundo, a imagem é reprocessada
       // Aguarda o modal de progresso desaparecer (indica que processamento terminou)
       log('[processFile] waiting for progress modal to disappear...');
 
       await waitForProgressModalToDisappear();
+
+      // Check abort flag
+      if (shouldAbortProcessing) {
+        log('[processFile] ABORTED after progress modal');
+        stopKeepAlive();
+        return;
+      }
 
       log('[processFile] progress modal disappeared, image re-processed');
 
@@ -222,6 +289,13 @@ async function processFile(item, format = 'eps', meta = {}, removeBackground = f
       downloadBtn = document.querySelector('#App-DownloadLink');
       currentDownloadUrl = downloadBtn?.href || null;
       log('[processFile] download button after background removal:', currentDownloadUrl);
+    }
+
+    // Final abort check before downloading
+    if (shouldAbortProcessing) {
+      log('[processFile] ABORTED before download - NOT clicking download or sending done');
+      stopKeepAlive();
+      return;
     }
 
     setResumeFlag({
@@ -799,7 +873,10 @@ function showOverlay(item, meta) {
       overlayEl.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:700; opacity:0.9;">
           <span>Batch Vectorizer</span>
-          <span id="vo-status">${t('processing')}</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span id="vo-status">${t('processing')}</span>
+            <button id="vo-close" style="background:transparent; border:none; color:#9ca3af; cursor:pointer; font-size:16px; padding:0; width:20px; height:20px; display:flex; align-items:center; justify-content:center; border-radius:4px; transition:all 0.2s;" title="Fechar">✕</button>
+          </div>
         </div>
         <div style="display:flex; gap:10px; margin-top:10px;">
           <div id="vo-thumb" style="width:46px; height:46px; border-radius:10px; background:#232734 center/cover no-repeat; flex-shrink:0;"></div>
@@ -817,6 +894,23 @@ function showOverlay(item, meta) {
         </div>
       `;
       document.body.appendChild(overlayEl);
+
+      // Add close button handler
+      const closeBtn = overlayEl.querySelector('#vo-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('mouseenter', () => {
+          closeBtn.style.background = '#ef4444';
+          closeBtn.style.color = '#ffffff';
+        });
+        closeBtn.addEventListener('mouseleave', () => {
+          closeBtn.style.background = 'transparent';
+          closeBtn.style.color = '#9ca3af';
+        });
+        closeBtn.addEventListener('click', () => {
+          log('[overlay] Close button clicked');
+          removeOverlay();
+        });
+      }
     }
 
     const titleEl = overlayEl.querySelector('#vo-title');
@@ -852,7 +946,7 @@ function showOverlay(item, meta) {
       thumbEl.style.backgroundImage = `url("${url}")`;
       thumbEl.style.display = 'block';
     } else if (thumbEl) {
-      // Esconde thumbnail quando não há dados
+      // Esconde thumbnail quando nao ha dados
       thumbEl.style.display = 'none';
     }
 

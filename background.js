@@ -371,6 +371,8 @@ async function kick() {
     return;
   }
 
+
+
   console.log('[kick] Processing:', next.name);
   next.status = 'processing';
   persistQueue(); // CRITICAL: Save processing status before sending to content script
@@ -389,7 +391,43 @@ async function ensureTab() {
   if (workerTabId) {
     try { return await chrome.tabs.get(workerTabId); } catch (e) { /* recreate below */ }
   }
-  const tab = await chrome.tabs.create({ url: 'https://pt.vectorizer.ai/' });
+
+  // Get the user's preferred language to use the correct locale URL
+  let langCode = 'en'; // default to English
+  try {
+    const result = await chrome.storage.local.get('vectorizer-language');
+    langCode = result['vectorizer-language'] || 'en';
+  } catch (e) {
+    console.log('[ensureTab] Error getting language:', e);
+  }
+
+  // Map language code to vectorizer.ai subdomain
+  // Note: vectorizer.ai uses subdomain format like pt.vectorizer.ai, es.vectorizer.ai, etc.
+  // English uses www or no subdomain
+  const subdomainMap = {
+    'en': 'www',
+    'pt': 'pt',
+    'es': 'es',
+    'fr': 'fr',
+    'de': 'de',
+    'it': 'it',
+    'ja': 'ja',
+    'ko': 'ko',
+    'ru': 'ru',
+    'zh': 'zh',
+    'hi': 'hi',
+    'id': 'id',
+    'pl': 'pl',
+    'th': 'th',
+    'tr': 'tr',
+    'vi': 'vi'
+  };
+
+  const subdomain = subdomainMap[langCode] || 'www';
+  const url = `https://${subdomain}.vectorizer.ai/`;
+  console.log('[ensureTab] Creating tab with locale URL:', url);
+
+  const tab = await chrome.tabs.create({ url });
   workerTabId = tab.id;
   return tab;
 }
