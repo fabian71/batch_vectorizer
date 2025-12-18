@@ -110,7 +110,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   // Esperar (Keep-Alive) - inicia ping para manter background vivo
   if (msg.type === 'queue:wait') {
     log('[content] queue wait requested, duration:', msg.duration);
-    startKeepAlive(msg.duration);
+    startKeepAliveForDuration(msg.duration);
     return;
   }
 });
@@ -679,7 +679,7 @@ function checkPricingRedirect() {
     // NÃO redireciona - fica na página para o usuário resolver
 
     // Mantém o Service Worker vivo enquanto estiver na página de pricing
-    startKeepAlive(3600000); // 1 hora de ping
+    startKeepAliveForDuration(3600000); // 1 hora de ping
   } catch (e) {
     log('[pricingRedirect] error', e);
   }
@@ -1130,20 +1130,21 @@ function startAutoPauseCountdown(endTime) {
     log('[startAutoPauseCountdown] countdown started, endTime:', endTime);
 
     // Inicia Keep-Alive para manter o Service Worker acordado
-    startKeepAlive(endTime - Date.now());
+    startKeepAliveForDuration(endTime - Date.now());
 
   } catch (e) {
     log('[startAutoPauseCountdown] error', e);
   }
 }
 
-// Inicia pings de keep-alive por uma duração específica
-function startKeepAlive(durationMs) {
+// Inicia pings de keep-alive por uma duração específica (usado no auto-pause)
+// IMPORTANTE: Esta função é separada de startKeepAlive() para evitar conflitos
+function startKeepAliveForDuration(durationMs) {
   if (keepAliveTimer) clearInterval(keepAliveTimer);
 
-  if (durationMs <= 0) return;
+  if (!durationMs || durationMs <= 0) return;
 
-  log('[startKeepAlive] starting pings for', durationMs, 'ms');
+  log('[startKeepAliveForDuration] starting pings for', durationMs, 'ms');
 
   // Ping inicial
   chrome.runtime.sendMessage({ type: 'keepAlive' }).catch(() => { });
@@ -1157,7 +1158,7 @@ function startKeepAlive(durationMs) {
     if (keepAliveTimer) {
       clearInterval(keepAliveTimer);
       keepAliveTimer = null;
-      log('[startKeepAlive] stopped after duration');
+      log('[startKeepAliveForDuration] stopped after duration');
     }
   }, durationMs + 5000);
 }
