@@ -43,7 +43,14 @@ function checkPauseState() {
   }
 }
 
-chrome.runtime.onMessage.addListener((msg) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  // Ping - usado para verificar se o content script está pronto
+  if (msg.type === 'ping') {
+    log('[onMessage] Ping received, responding with pong');
+    sendResponse({ pong: true, timestamp: Date.now() });
+    return true; // Keeps the message channel open
+  }
+
   if (msg.type === 'poc:process') {
     log('[onMessage] ========== POC:PROCESS RECEIVED ==========');
     log('[onMessage] File:', msg.item?.name);
@@ -53,7 +60,8 @@ chrome.runtime.onMessage.addListener((msg) => {
     log('[onMessage] Current overlay state:', overlayEl ? 'exists' : 'null');
     log('[onMessage] ========================================');
     processFile(msg.item, msg.format || 'eps', msg.meta || {}, msg.removeBackground || false);
-    return;
+    sendResponse({ received: true });
+    return true;
   }
 
 
@@ -66,7 +74,8 @@ chrome.runtime.onMessage.addListener((msg) => {
     stopKeepAlive(); // Stop keep-alive pings when queue is cancelled
     removeOverlay();
     log('[content] ========== CANCEL COMPLETE ==========');
-    return;
+    sendResponse({ cancelled: true });
+    return true;
   }
 
   // Pausar - atualiza status na div flutuante
@@ -74,7 +83,8 @@ chrome.runtime.onMessage.addListener((msg) => {
     log('[content] queue paused - setting abort flag');
     shouldAbortProcessing = true; // Signal to abort current processing
     updateOverlayPaused(true);
-    return;
+    sendResponse({ paused: true });
+    return true;
   }
 
   // Continuar - atualiza status na div flutuante
@@ -97,22 +107,29 @@ chrome.runtime.onMessage.addListener((msg) => {
 
     updateOverlayPaused(false);
     stopAutoPauseCountdown();
-    return;
+    sendResponse({ resumed: true });
+    return true;
   }
 
   // Auto-pause - mostra countdown na div flutuante
   if (msg.type === 'queue:autoPause') {
     log('[content] auto-pause activated, endTime:', msg.endTime);
     startAutoPauseCountdown(msg.endTime);
-    return;
+    sendResponse({ autoPauseStarted: true });
+    return true;
   }
 
   // Esperar (Keep-Alive) - inicia ping para manter background vivo
   if (msg.type === 'queue:wait') {
     log('[content] queue wait requested, duration:', msg.duration);
     startKeepAliveForDuration(msg.duration);
-    return;
+    sendResponse({ keepAliveStarted: true });
+    return true;
   }
+
+  // Default response for unknown messages
+  sendResponse({ unknown: true });
+  return true;
 });
 
 // Keep-alive interval to prevent service worker suspension
@@ -140,6 +157,49 @@ function stopKeepAlive() {
     clearInterval(keepAliveInterval);
     keepAliveInterval = null;
   }
+}
+
+// Keep-alive variable for duration-based keep-alive
+let keepAliveDurationTimeout = null;
+
+// Start keep-alive for a specific duration (in milliseconds)
+// This is used to keep the Service Worker alive during the delay between images
+function startKeepAliveForDuration(durationMs) {
+  log('[startKeepAliveForDuration] Starting keep-alive for', durationMs, 'ms');
+
+  // Clear any existing duration timeout
+  if (keepAliveDurationTimeout) {
+    clearTimeout(keepAliveDurationTimeout);
+    keepAliveDurationTimeout = null;
+  }
+
+  // Start the regular keep-alive if not already running
+  startKeepAlive();
+
+  // Schedule stopping the keep-alive after the duration
+  // But only if there's no ongoing processing (check at that time)
+  keepAliveDurationTimeout = setTimeout(() => {
+    log('[startKeepAliveForDuration] Duration expired, checking if should stop...');
+
+    // Check if we should stop by asking the background for queue status
+    chrome.runtime.sendMessage({ type: 'queue:get' }, (res) => {
+      if (chrome.runtime.lastError) {
+        log('[startKeepAliveForDuration] Error getting queue status:', chrome.runtime.lastError.message);
+        return;
+      }
+
+      // Only stop if queue is empty or all items are done
+      const hasPending = res?.queue?.some(q => q.status === 'pending' || q.status === 'processing');
+      if (!hasPending) {
+        log('[startKeepAliveForDuration] No pending items, stopping keep-alive');
+        stopKeepAlive();
+      } else {
+        log('[startKeepAliveForDuration] Still has pending items, keeping keep-alive active');
+      }
+    });
+
+    keepAliveDurationTimeout = null;
+  }, durationMs);
 }
 
 async function processFile(item, format = 'eps', meta = {}, removeBackground = false) {

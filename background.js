@@ -430,14 +430,21 @@ async function ensureTab() {
       const isOnImagePage = tabUrl.includes('/images/');
 
       if (isOnImagePage) {
-        console.log('[ensureTab] Tab is on image result page, navigating back to home:', homeUrl);
+        console.log('[ensureTab] ========== NAVIGATING BACK TO HOME ==========');
+        console.log('[ensureTab] Current URL:', tabUrl);
+        console.log('[ensureTab] Target home URL:', homeUrl);
+
         await chrome.tabs.update(workerTabId, { url: homeUrl });
+        console.log('[ensureTab] Navigation initiated, waiting for page to load...');
 
         // Wait for the page to load before returning
         // We need to wait for the content script to be ready
         await new Promise(resolve => {
+          let resolved = false;
           const checkReady = (tabId, changeInfo) => {
-            if (tabId === workerTabId && changeInfo.status === 'complete') {
+            if (tabId === workerTabId && changeInfo.status === 'complete' && !resolved) {
+              console.log('[ensureTab] Tab load complete event received');
+              resolved = true;
               chrome.tabs.onUpdated.removeListener(checkReady);
               resolve();
             }
@@ -445,15 +452,22 @@ async function ensureTab() {
           chrome.tabs.onUpdated.addListener(checkReady);
           // Timeout after 15 seconds
           setTimeout(() => {
-            chrome.tabs.onUpdated.removeListener(checkReady);
-            resolve();
+            if (!resolved) {
+              console.log('[ensureTab] Timeout waiting for tab load, continuing anyway');
+              resolved = true;
+              chrome.tabs.onUpdated.removeListener(checkReady);
+              resolve();
+            }
           }, 15000);
         });
 
         // Additional delay to ensure content script is fully loaded
+        console.log('[ensureTab] Waiting 2s for content script to initialize...');
         await new Promise(resolve => setTimeout(resolve, 2000));
-        console.log('[ensureTab] Navigation to home complete, returning tab');
-        return await chrome.tabs.get(workerTabId);
+        console.log('[ensureTab] ========== NAVIGATION COMPLETE ==========');
+        const updatedTab = await chrome.tabs.get(workerTabId);
+        console.log('[ensureTab] Returning tab with URL:', updatedTab.url);
+        return updatedTab;
       }
 
       console.log('[ensureTab] Tab exists and is on valid page, reusing');
@@ -557,10 +571,14 @@ function markDone(result) {
   const waitMs = delaySeconds > 0 ? delaySeconds * 1000 : 0;
   console.log('[markDone] Delay configured:', delaySeconds, 'seconds =', waitMs, 'ms');
 
-  // Se o tempo de espera for longo, pede para a aba manter o worker vivo
-  if (waitMs > 20000 && workerTabId) {
-    console.log('[markDone] Long wait detected, requesting keep-alive for', waitMs, 'ms');
-    chrome.tabs.sendMessage(workerTabId, { type: 'queue:wait', duration: waitMs }).catch(() => { });
+  // CRITICAL FIX: Always request keep-alive when there are pending items
+  // This prevents the Service Worker from being suspended during the delay between images
+  const stillHasPending = queue.some(q => q.status === 'pending');
+  if (stillHasPending && workerTabId) {
+    // Request keep-alive for at least the delay duration + extra time for navigation
+    const keepAliveDuration = Math.max(waitMs + 20000, 30000); // At least 30 seconds
+    console.log('[markDone] Still has pending items, requesting keep-alive for', keepAliveDuration, 'ms');
+    chrome.tabs.sendMessage(workerTabId, { type: 'queue:wait', duration: keepAliveDuration }).catch(() => { });
   }
 
   console.log('[markDone] ========== CALLING KICK AFTER', waitMs, 'ms ==========');
@@ -781,6 +799,36 @@ function getMappedName(url) {
   }
 }
 
+// Waits for the content script to be ready by sending ping messages
+async function waitForContentScript(tabId, maxAttempts = 10) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        chrome.tabs.sendMessage(tabId, { type: 'ping' }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(response);
+          }
+        });
+      });
+
+      if (response && response.pong) {
+        console.log('[waitForContentScript] Content script is ready after', attempt + 1, 'attempts');
+        return true;
+      }
+    } catch (e) {
+      console.log('[waitForContentScript] Attempt', attempt + 1, '- Content script not ready:', e.message);
+    }
+
+    // Wait before next attempt (increasing delay)
+    await new Promise(resolve => setTimeout(resolve, 500 + (attempt * 200)));
+  }
+
+  console.log('[waitForContentScript] Content script not ready after', maxAttempts, 'attempts');
+  return false;
+}
+
 function sendProcessMessage(tabId, item, position, total, attempt = 0) {
   console.log('[sendProcessMessage] ========== SENDING POC:PROCESS ==========');
   console.log('[sendProcessMessage] TabId:', tabId);
@@ -789,13 +837,30 @@ function sendProcessMessage(tabId, item, position, total, attempt = 0) {
   console.log('[sendProcessMessage] Attempt:', attempt);
   console.log('[sendProcessMessage] ==========================================');
 
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
+    // First, wait for the content script to be ready
+    if (attempt === 0) {
+      console.log('[sendProcessMessage] Waiting for content script to be ready...');
+      const isReady = await waitForContentScript(tabId);
+      if (!isReady) {
+        console.log('[sendProcessMessage] Content script not ready, will retry...');
+        // Mark as pending and try again later
+        const idx = queue.findIndex(q => q.name === item.name);
+        if (idx >= 0) queue[idx].status = 'pending';
+        isRunning = false;
+        // Try to kick again after a longer delay
+        setTimeout(() => kick(), 3000);
+        return resolve();
+      }
+    }
+
     chrome.tabs.sendMessage(tabId, { type: 'poc:process', item, format: downloadFormat, removeBackground, meta: { position, total } }, () => {
       if (chrome.runtime.lastError) {
         console.log('[sendProcessMessage] ERROR:', chrome.runtime.lastError.message);
-        if (attempt < 3) {
+        if (attempt < 5) { // Increased max retries
           console.log('[sendProcessMessage] Retrying... (attempt', attempt + 1, ')');
-          return setTimeout(() => resolve(sendProcessMessage(tabId, item, position, total, attempt + 1)), 500);
+          // Increased delay between retries
+          return setTimeout(() => resolve(sendProcessMessage(tabId, item, position, total, attempt + 1)), 1000);
         } else {
           console.log('[sendProcessMessage] Max retries reached, marking as pending');
           // refile to pending so it can retry later
