@@ -388,10 +388,6 @@ function stripData(item) {
 }
 
 async function ensureTab() {
-  if (workerTabId) {
-    try { return await chrome.tabs.get(workerTabId); } catch (e) { /* recreate below */ }
-  }
-
   // Get the user's preferred language to use the correct locale URL
   let langCode = 'en'; // default to English
   try {
@@ -402,8 +398,6 @@ async function ensureTab() {
   }
 
   // Map language code to vectorizer.ai subdomain
-  // Note: vectorizer.ai uses subdomain format like pt.vectorizer.ai, es.vectorizer.ai, etc.
-  // English uses www or no subdomain
   const subdomainMap = {
     'en': 'www',
     'pt': 'pt',
@@ -424,10 +418,54 @@ async function ensureTab() {
   };
 
   const subdomain = subdomainMap[langCode] || 'www';
-  const url = `https://${subdomain}.vectorizer.ai/`;
-  console.log('[ensureTab] Creating tab with locale URL:', url);
+  const homeUrl = `https://${subdomain}.vectorizer.ai/`;
 
-  const tab = await chrome.tabs.create({ url });
+  if (workerTabId) {
+    try {
+      const existingTab = await chrome.tabs.get(workerTabId);
+      const tabUrl = existingTab.url || '';
+
+      // Check if tab is on an image result page (e.g., /images/...)
+      // If so, we need to navigate back to home for the next upload
+      const isOnImagePage = tabUrl.includes('/images/');
+
+      if (isOnImagePage) {
+        console.log('[ensureTab] Tab is on image result page, navigating back to home:', homeUrl);
+        await chrome.tabs.update(workerTabId, { url: homeUrl });
+
+        // Wait for the page to load before returning
+        // We need to wait for the content script to be ready
+        await new Promise(resolve => {
+          const checkReady = (tabId, changeInfo) => {
+            if (tabId === workerTabId && changeInfo.status === 'complete') {
+              chrome.tabs.onUpdated.removeListener(checkReady);
+              resolve();
+            }
+          };
+          chrome.tabs.onUpdated.addListener(checkReady);
+          // Timeout after 15 seconds
+          setTimeout(() => {
+            chrome.tabs.onUpdated.removeListener(checkReady);
+            resolve();
+          }, 15000);
+        });
+
+        // Additional delay to ensure content script is fully loaded
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log('[ensureTab] Navigation to home complete, returning tab');
+        return await chrome.tabs.get(workerTabId);
+      }
+
+      console.log('[ensureTab] Tab exists and is on valid page, reusing');
+      return existingTab;
+    } catch (e) {
+      console.log('[ensureTab] Error getting existing tab, will create new:', e);
+      /* recreate below */
+    }
+  }
+
+  console.log('[ensureTab] Creating new tab with locale URL:', homeUrl);
+  const tab = await chrome.tabs.create({ url: homeUrl });
   workerTabId = tab.id;
   return tab;
 }
