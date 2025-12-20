@@ -6,7 +6,7 @@ let delaySeconds = 5;
 let downloadFormat = 'eps';
 let downloadFolder = '';
 let removeBackground = false;
-let autoPause = { enabled: false, count: 10, minutes: 5 };
+let autoPause = { enabled: false, count: 10, minMinutes: 1, maxMinutes: 5 };
 let processedCount = 0; // Counter for processed images since last pause
 let autoPauseEndTime = null; // When the automatic pause ends
 let queueExplicitlyCancelled = false; // Flag to prevent persisting after cancellation
@@ -236,8 +236,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     autoPause = {
       enabled: Boolean(msg.autoPause?.enabled),
       count: parseInt(msg.autoPause?.count) || 10,
-      minutes: parseInt(msg.autoPause?.minutes) || 5
+      minMinutes: parseInt(msg.autoPause?.minMinutes) || 1,
+      maxMinutes: parseInt(msg.autoPause?.maxMinutes) || 5
     };
+    // Ensure max is always greater than min
+    if (autoPause.maxMinutes <= autoPause.minMinutes) {
+      autoPause.maxMinutes = autoPause.minMinutes + 1;
+    }
     persistConfig();
     sendResponse?.({ autoPause });
     return;
@@ -522,7 +527,11 @@ function markDone(result) {
         processedCount = 0; // Resets counter
         isPaused = true;
         isRunning = false; // Resets to allow kick() on timer
-        autoPauseEndTime = Date.now() + (autoPause.minutes * 60 * 1000);
+        // Generate random pause duration between min and max minutes
+        const randomMinutes = autoPause.minMinutes + Math.random() * (autoPause.maxMinutes - autoPause.minMinutes);
+        const pauseDurationMs = Math.round(randomMinutes * 60 * 1000);
+        console.log('[markDone] Random pause duration:', randomMinutes.toFixed(2), 'minutes (', pauseDurationMs, 'ms)');
+        autoPauseEndTime = Date.now() + pauseDurationMs;
 
         // Persists pause state AND the queue to survive service worker restarts
         chrome.storage.local.set({
@@ -665,8 +674,13 @@ function loadConfig() {
         autoPause = {
           enabled: Boolean(cfg.autoPause.enabled),
           count: parseInt(cfg.autoPause.count) || 10,
-          minutes: parseInt(cfg.autoPause.minutes) || 5
+          minMinutes: parseInt(cfg.autoPause.minMinutes) || 1,
+          maxMinutes: parseInt(cfg.autoPause.maxMinutes) || 5
         };
+        // Ensure max is always greater than min
+        if (autoPause.maxMinutes <= autoPause.minMinutes) {
+          autoPause.maxMinutes = autoPause.minMinutes + 1;
+        }
       }
       broadcastQueue();
     });

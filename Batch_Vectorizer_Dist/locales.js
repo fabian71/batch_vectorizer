@@ -56,7 +56,9 @@ const LOCALES = {
             step3ClickResume: "3. Click \"Resume\" in extension",
             fileTooLarge: "File too large! Maximum 2MB per file:",
             totalTooLarge: "Total size too large! {size}MB exceeds the 12MB limit. Use fewer or smaller files.",
-            serializationError: "Error processing files. Try with smaller files."
+            serializationError: "Error processing files. Try with smaller files.",
+            randomPause: "Random pause interval (minutes)",
+            min: "min"
         }
     },
     pt: {
@@ -115,7 +117,9 @@ const LOCALES = {
             step3ClickResume: "3. Clique em \"Continuar\" na extensao",
             fileTooLarge: "Arquivo muito grande! Maximo de 2MB por arquivo:",
             totalTooLarge: "Tamanho total muito grande! {size}MB excede o limite de 12MB. Use menos arquivos ou arquivos menores.",
-            serializationError: "Erro ao processar arquivos. Tente com arquivos menores."
+            serializationError: "Erro ao processar arquivos. Tente com arquivos menores.",
+            randomPause: "Intervalo de pausa aleatório (minutos)",
+            min: "min"
         }
     },
     es: {
@@ -174,7 +178,9 @@ const LOCALES = {
             step3ClickResume: "3. Haga clic en \"Continuar\" en la extension",
             fileTooLarge: "Archivo demasiado grande! Maximo 2MB por archivo:",
             totalTooLarge: "Tamano total demasiado grande! {size}MB excede el limite de 12MB. Use menos archivos o archivos mas pequenos.",
-            serializationError: "Error al procesar archivos. Intente con archivos mas pequenos."
+            serializationError: "Error al procesar archivos. Intente con archivos mas pequenos.",
+            randomPause: "Intervalo de pausa aleatorio (minutos)",
+            min: "min"
         }
     },
     fr: {
@@ -230,7 +236,9 @@ const LOCALES = {
             captchaDetected: "CAPTCHA DÉTECTÉ",
             step1AddImage: "1. Ajouter l'image manuellement",
             step2SolveCaptcha: "2. Résoudre le captcha",
-            step3ClickResume: "3. Cliquez sur \"Reprendre\" dans l'extension"
+            step3ClickResume: "3. Cliquez sur \"Reprendre\" dans l'extension",
+            randomPause: "Intervalle de pause aléatoire (minutes)",
+            min: "min"
         }
     },
     de: {
@@ -286,7 +294,9 @@ const LOCALES = {
             captchaDetected: "CAPTCHA ERKANNT",
             step1AddImage: "1. Bild manuell hinzufügen",
             step2SolveCaptcha: "2. Captcha lösen",
-            step3ClickResume: "3. Klicken Sie in der Erweiterung auf \"Fortsetzen\""
+            step3ClickResume: "3. Klicken Sie in der Erweiterung auf \"Fortsetzen\"",
+            randomPause: "Zufälliges Pausenintervall (Minuten)",
+            min: "min"
         }
     },
     it: {
@@ -342,7 +352,9 @@ const LOCALES = {
             captchaDetected: "CAPTCHA RILEVATO",
             step1AddImage: "1. Aggiungi immagine manualmente",
             step2SolveCaptcha: "2. Risolvi il captcha",
-            step3ClickResume: "3. Clicca su \"Riprendi\" nell'estensione"
+            step3ClickResume: "3. Clicca su \"Riprendi\" nell'estensione",
+            randomPause: "Intervallo di pausa casuale (minuti)",
+            min: "min"
         }
     },
     ja: {

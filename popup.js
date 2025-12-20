@@ -11,7 +11,9 @@ const cancelBtn = document.getElementById('cancelBtn');
 const autoPauseEnabled = document.getElementById('autoPauseEnabled');
 const autoPauseConfig = document.getElementById('autoPauseConfig');
 const autoPauseCount = document.getElementById('autoPauseCount');
-const autoPauseMinutes = document.getElementById('autoPauseMinutes');
+const autoPauseMinMin = document.getElementById('autoPauseMinMin');
+const autoPauseMaxMin = document.getElementById('autoPauseMaxMin');
+const pauseRangeDisplay = document.getElementById('pauseRangeDisplay');
 const dropzone = document.getElementById('dropzone');
 const langSelect = document.getElementById('langSelect');
 const clearQueueBtn = document.getElementById('clearQueueBtn');
@@ -90,11 +92,8 @@ function applyTranslations() {
     if (spans[0]) spans[0].textContent = t('every');
     if (spans[1]) spans[1].textContent = t('images');
   }
-  if (autoPauseRows[1]) {
-    const spans = autoPauseRows[1].querySelectorAll('span');
-    if (spans[0]) spans[0].textContent = t('pauseFor');
-    if (spans[1]) spans[1].textContent = t('minutes');
-  }
+  // Update pause range display
+  updatePauseRangeDisplay();
 
   // Update buttons
   const startBtnText = startBtn.querySelector('.btn-text');
@@ -522,7 +521,9 @@ chrome.runtime.sendMessage({ type: 'queue:get' }, (res) => {
   if (res && res.autoPause) {
     autoPauseEnabled.checked = res.autoPause.enabled || false;
     autoPauseCount.value = res.autoPause.count || 10;
-    autoPauseMinutes.value = res.autoPause.minutes || 5;
+    autoPauseMinMin.value = res.autoPause.minMinutes || 1;
+    autoPauseMaxMin.value = res.autoPause.maxMinutes || 5;
+    updatePauseRangeDisplay();
     autoPauseConfig.style.display = autoPauseEnabled.checked ? 'block' : 'none';
   }
   // Update control buttons state
@@ -564,17 +565,42 @@ autoPauseEnabled.addEventListener('change', () => {
 
 // Auto-pause config changes
 autoPauseCount.addEventListener('change', saveAutoPauseConfig);
-autoPauseMinutes.addEventListener('change', saveAutoPauseConfig);
+autoPauseMinMin.addEventListener('change', saveAutoPauseConfig);
+autoPauseMaxMin.addEventListener('change', saveAutoPauseConfig);
 
 function saveAutoPauseConfig() {
+  const minVal = parseInt(autoPauseMinMin.value) || 1;
+  let maxVal = parseInt(autoPauseMaxMin.value) || 5;
+
+  // Ensure max is always greater than min
+  if (maxVal <= minVal) {
+    maxVal = minVal + 1;
+    autoPauseMaxMin.value = maxVal;
+  }
+
+  // Clamp values to valid range
+  if (minVal < 1) autoPauseMinMin.value = 1;
+  if (maxVal > 45) autoPauseMaxMin.value = 45;
+
+  updatePauseRangeDisplay();
+
   chrome.runtime.sendMessage({
     type: 'config:setAutoPause',
     autoPause: {
       enabled: autoPauseEnabled.checked,
       count: parseInt(autoPauseCount.value) || 10,
-      minutes: parseInt(autoPauseMinutes.value) || 5
+      minMinutes: parseInt(autoPauseMinMin.value) || 1,
+      maxMinutes: parseInt(autoPauseMaxMin.value) || 5
     }
   });
+}
+
+function updatePauseRangeDisplay() {
+  const minVal = parseInt(autoPauseMinMin.value) || 1;
+  const maxVal = parseInt(autoPauseMaxMin.value) || 5;
+  if (pauseRangeDisplay) {
+    pauseRangeDisplay.textContent = `${minVal} - ${maxVal} min`;
+  }
 }
 
 // Pause Button

@@ -364,13 +364,59 @@
       color: var(--text);
     }
 
-    .auto-pause-row input {
+    .auto-pause-row input[type="number"] {
       width: 60px;
       padding: 6px 8px;
       text-align: center;
       border: 1px solid var(--border);
       border-radius: 6px;
       font-size: 13px;
+    }
+
+    /* Random Pause Slider */
+    .pause-range-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .pause-range-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .pause-range-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pause-range-inputs input[type="number"] {
+      width: 50px;
+      padding: 6px 8px;
+      text-align: center;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .pause-range-inputs .separator {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .pause-range-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      background: linear-gradient(135deg, #e0f7ff 0%, #f0f9ff 100%);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--brand-2);
     }
 
     /* Action Buttons */
@@ -751,10 +797,15 @@
               <input id="autoPauseCount" type="number" min="1" value="10">
               <span data-i18n="images">images</span>
             </div>
-            <div class="auto-pause-row">
-              <span data-i18n="pauseFor">Pause for</span>
-              <input id="autoPauseMinutes" type="number" min="1" value="5">
-              <span data-i18n="minutes">minutes</span>
+            <div class="auto-pause-row pause-range-container">
+              <span class="pause-range-label" data-i18n="randomPause">Random pause interval (minutes)</span>
+              <div class="pause-range-inputs">
+                <input id="autoPauseMinMin" type="number" min="1" max="44" value="1" title="Minimum">
+                <span class="separator">—</span>
+                <input id="autoPauseMaxMin" type="number" min="2" max="45" value="5" title="Maximum">
+                <span data-i18n="min">min</span>
+              </div>
+              <div id="pauseRangeDisplay" class="pause-range-display">1 - 5 min</div>
             </div>
           </div>
         </div>
