@@ -11,6 +11,7 @@ let processedCount = 0; // Counter for processed images since last pause
 let autoPauseEndTime = null; // When the automatic pause ends
 let queueExplicitlyCancelled = false; // Flag to prevent persisting after cancellation
 const downloadNameMap = new Map();
+const QUEUE_ITEM_KEY_PREFIX = 'vectorizer-queue-item:';
 
 
 let stateReadyPromiseResolve;
@@ -21,9 +22,87 @@ registerDownloadHandler();
 restoreQueueFromStorage(); // CRITICAL: Restore queue from storage on startup
 loadAutoPauseState(); // Loads auto-pause state if it exists
 
+function createQueueItemId(item, index = 0) {
+  if (item?.id) return item.id;
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `queue-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function getQueueItemStorageKey(id) {
+  return `${QUEUE_ITEM_KEY_PREFIX}${id}`;
+}
+
+async function saveQueueItemData(item) {
+  if (!item?.id) return;
+  await chrome.storage.local.set({
+    [getQueueItemStorageKey(item.id)]: {
+      id: item.id,
+      data: item.data,
+      type: item.type,
+      width: item.width,
+      height: item.height,
+      size: item.size,
+      name: item.name
+    }
+  });
+}
+
+async function getQueueItemData(id) {
+  if (!id) return null;
+  const result = await chrome.storage.local.get(getQueueItemStorageKey(id));
+  return result?.[getQueueItemStorageKey(id)] || null;
+}
+
+async function removeQueueItemData(id) {
+  if (!id) return;
+  await chrome.storage.local.remove(getQueueItemStorageKey(id));
+}
+
+async function clearQueueItemData() {
+  const allItems = await chrome.storage.local.get(null);
+  const keys = Object.keys(allItems).filter((key) => key.startsWith(QUEUE_ITEM_KEY_PREFIX));
+  if (keys.length > 0) {
+    await chrome.storage.local.remove(keys);
+  }
+}
+
+async function hydrateQueueData(items) {
+  await Promise.all(items.map(async (item) => {
+    if (item?.data?.length || !item?.id) return;
+    try {
+      const stored = await getQueueItemData(item.id);
+      if (stored?.data?.length) {
+        item.data = stored.data;
+        item.type = item.type || stored.type;
+        item.width = item.width || stored.width;
+        item.height = item.height || stored.height;
+        item.size = item.size || stored.size;
+      }
+    } catch (e) {
+      console.log('[hydrateQueueData] Error hydrating item', item?.name, e);
+    }
+  }));
+}
+
+function requeueProcessingItems(reason = 'unknown') {
+  let changed = false;
+  queue.forEach((item) => {
+    if (item.status === 'processing') {
+      item.status = 'pending';
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    console.log('[requeueProcessingItems] Requeued processing items due to', reason);
+  }
+
+  return changed;
+}
+
 // CRITICAL: Persist queue to storage to survive service worker restarts
-// NOTE: We do NOT persist binary data (q.data) to avoid quota exceeded errors
-// Binary data stays in memory only. If service worker restarts, queue will be lost.
+// NOTE: Binary data is persisted separately in chrome.storage.local by item id.
+// The queue state itself stays lightweight and survives service worker restarts.
 function persistQueue() {
   try {
     // Do NOT persist if queue was explicitly cancelled
@@ -41,6 +120,7 @@ function persistQueue() {
     chrome.storage.local.set({
       persistedQueue: {
         queue: queue.map(q => ({
+          id: q.id,
           name: q.name,
           type: q.type,
           status: q.status,
@@ -56,7 +136,7 @@ function persistQueue() {
         timestamp: Date.now()
       }
     });
-    console.log('[persistQueue] Queue saved with', queue.length, 'items (metadata only)');
+    console.log('[persistQueue] Queue saved with', queue.length, 'items (metadata only, binary stored separately)');
   } catch (e) {
     console.log('[persistQueue] Error:', e);
   }
@@ -69,45 +149,58 @@ function persistQueue() {
 function restoreQueueFromStorage() {
   console.log('[restoreQueueFromStorage] ========== ATTEMPTING TO RESTORE QUEUE ==========');
   chrome.storage.local.get(['persistedQueue'], (res) => {
-    try {
+    (async () => {
       console.log('[restoreQueueFromStorage] Storage result:', res);
       const state = res?.persistedQueue;
       if (state && state.queue && state.queue.length > 0) {
-        // Only restore if timestamp is recent (less than 1 hour old)
         const age = Date.now() - (state.timestamp || 0);
         console.log('[restoreQueueFromStorage] Queue age:', age, 'ms (', Math.round(age / 1000), 'seconds)');
-        if (age < 3600000) { // 1 hour
-          // Check if there are any items still pending or processing
-          const hasPendingOrProcessing = state.queue.some(q => q.status === 'pending' || q.status === 'processing');
+        if (age < 3600000) {
+          queue = state.queue.map((item, index) => ({
+            ...item,
+            id: item.id || createQueueItemId(item, index)
+          }));
+          isRunning = false;
+          isPaused = state.isPaused || false;
+          workerTabId = state.workerTabId;
+          processedCount = state.processedCount || 0;
 
-          if (hasPendingOrProcessing) {
-            console.log('[restoreQueueFromStorage] ⚠️ Queue has pending/processing items but NO binary data');
-            console.log('[restoreQueueFromStorage] ⚠️ This means Service Worker was restarted during processing');
-            console.log('[restoreQueueFromStorage] ⚠️ Items would be skipped anyway, so NOT restoring queue');
-            console.log('[restoreQueueFromStorage] ⚠️ Clearing persisted queue to avoid confusion');
-            chrome.storage.local.remove('persistedQueue');
-          } else {
-            // Only "done" or "skipped" items - safe to restore for UI display
-            queue = state.queue;
-            isRunning = false;
-            isPaused = state.isPaused || false;
-            workerTabId = state.workerTabId;
-            processedCount = state.processedCount || 0;
-            console.log('[restoreQueueFromStorage] ✅ Restored queue with', queue.length, 'items (all completed)');
-            console.log('[restoreQueueFromStorage] Queue items:', queue.map(q => `${q.name}:${q.status}`));
-            broadcastQueue();
+          await hydrateQueueData(queue);
+          requeueProcessingItems('restoreQueueFromStorage');
+
+          const missingDataItems = queue.filter(q =>
+            (q.status === 'pending' || q.status === 'processing') && (!q.data || q.data.length === 0)
+          );
+
+          if (missingDataItems.length > 0) {
+            console.log('[restoreQueueFromStorage] Missing binary data for', missingDataItems.length, 'pending items');
+            missingDataItems.forEach(item => {
+              if (item.status === 'processing') item.status = 'pending';
+            });
+          }
+
+          console.log('[restoreQueueFromStorage] Restored queue with', queue.length, 'items');
+          console.log('[restoreQueueFromStorage] Queue items:', queue.map(q => `${q.name}:${q.status}`));
+          broadcastQueue();
+
+          const hasPendingOrProcessing = queue.some(q => q.status === 'pending' || q.status === 'processing');
+          if (hasPendingOrProcessing && !isPaused) {
+            console.log('[restoreQueueFromStorage] Pending items found after restore, resuming kick()');
+            setTimeout(() => kick(), 500);
           }
         } else {
-          console.log('[restoreQueueFromStorage] ❌ Queue too old, clearing');
+          console.log('[restoreQueueFromStorage] Queue too old, clearing');
           chrome.storage.local.remove('persistedQueue');
+          clearQueueItemData().catch((e) => console.log('[restoreQueueFromStorage] Error clearing stored queue items:', e));
         }
       } else {
-        console.log('[restoreQueueFromStorage] ℹ️ No persisted queue found in storage');
+        console.log('[restoreQueueFromStorage] No persisted queue found in storage');
       }
-    } catch (e) {
-      console.log('[restoreQueueFromStorage] ❌ Error:', e);
-    }
-    console.log('[restoreQueueFromStorage] ========== RESTORE COMPLETE ==========');
+    })().catch((e) => {
+      console.log('[restoreQueueFromStorage] Error:', e);
+    }).finally(() => {
+      console.log('[restoreQueueFromStorage] ========== RESTORE COMPLETE ==========');
+    });
   });
 }
 
@@ -153,29 +246,42 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'queue:add') {
-    console.log('[queue:add] Received', msg.items?.length, 'items');
+    (async () => {
+      console.log('[queue:add] Received', msg.items?.length, 'items');
 
-    // Clears existing queue and resets state
-    queue = [];
-    isRunning = false;
-    isPaused = false;
-    processedCount = 0;
-    autoPauseEndTime = null;
-    queueExplicitlyCancelled = false; // Reset flag to allow persistence
-    chrome.alarms.clear('autoPauseResume');
-    chrome.storage.local.remove('autoPauseState');
+      queue = [];
+      isRunning = false;
+      isPaused = false;
+      processedCount = 0;
+      autoPauseEndTime = null;
+      queueExplicitlyCancelled = false;
+      chrome.alarms.clear('autoPauseResume');
+      chrome.storage.local.remove('autoPauseState');
+      chrome.storage.local.remove('manualPauseState');
+      chrome.storage.local.remove('vectorizer-active-session');
+      await clearQueueItemData();
 
-    // Adds new items
-    queue.push(...msg.items.map(it => ({ ...it, status: 'pending' })));
+      const items = (msg.items || []).map((it, index) => ({
+        ...it,
+        id: createQueueItemId(it, index),
+        status: 'pending'
+      }));
 
-    console.log('[queue:add] Queue now has', queue.length, 'items');
-    console.log('[queue:add] Queue items:', queue.map(q => q.name));
+      queue.push(...items);
+      await Promise.all(items.map(item => saveQueueItemData(item)));
 
-    persistQueue(); // CRITICAL: Save queue to storage
-    broadcastQueue();
-    kick();
-    sendResponse?.();
-    return;
+      console.log('[queue:add] Queue now has', queue.length, 'items');
+      console.log('[queue:add] Queue items:', queue.map(q => q.name));
+
+      persistQueue();
+      broadcastQueue();
+      kick();
+      sendResponse?.({ queued: queue.length });
+    })().catch((e) => {
+      console.log('[queue:add] Error:', e);
+      sendResponse?.({ error: String(e) });
+    });
+    return true;
   }
   if (msg.type === 'poc:done') {
     console.log('[background] ========== POC:DONE RECEIVED ==========');
@@ -252,18 +358,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return;
   }
   if (msg.type === 'pricing:retry') {
-    retryItem(msg.name);
+    retryItem(msg.id || msg.name);
     sendResponse?.();
     return;
   }
   if (msg.type === 'poc:retry') {
-    retryItem(msg.name);
+    retryItem(msg.id || msg.name);
     sendResponse?.();
     return;
   }
   // Pause processing
   if (msg.type === 'queue:pause') {
     isPaused = true;
+    isRunning = false;
+    requeueProcessingItems('manual-pause');
+    persistQueue();
     console.log('[background] queue paused');
     broadcastQueue();
     // Persist visual state to simple storage (prevents UI clearing on suspend)
@@ -320,6 +429,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         console.log('[background] Error clearing storage:', chrome.runtime.lastError);
       }
     });
+    clearQueueItemData().catch((e) => console.log('[background] Error clearing stored queue items:', e));
+    chrome.storage.local.remove('vectorizer-active-session');
 
     console.log('[background] Queue cleared, broadcasting update...');
     broadcastQueue();
@@ -371,6 +482,7 @@ async function kick() {
     next.status = 'skipped'; // Marks as skipped
     persistQueue(); // Save skipped status
     broadcastQueue();
+    removeQueueItemData(next.id).catch((e) => console.log('[kick] Error clearing skipped item data:', e));
     // Continues to the next
     setTimeout(() => kick(), 100);
     return;
@@ -384,12 +496,12 @@ async function kick() {
   broadcastQueue();
   isRunning = true;
   const tab = await ensureTab();
-  const position = queue.findIndex(q => q.name === next.name) + 1;
+  const position = queue.findIndex(q => q.id === next.id || q.name === next.name) + 1;
   await sendProcessMessage(tab.id, stripData(next), position, queue.length);
 }
 
 function stripData(item) {
-  return { name: item.name, type: item.type, data: item.data, width: item.width, height: item.height };
+  return { id: item.id, name: item.name, type: item.type, data: item.data, width: item.width, height: item.height };
 }
 
 async function ensureTab() {
@@ -493,11 +605,14 @@ function markDone(result) {
   console.log('[markDone] START - result:', result.name, 'status:', result.status);
   console.log('[markDone] Queue before:', queue.map(q => `${q.name}:${q.status}`));
 
-  const idx = queue.findIndex(q => q.name === result.name);
+  const idx = queue.findIndex(q => (result.id && q.id === result.id) || q.name === result.name);
   if (idx >= 0) {
     queue[idx].status = result.status;
     console.log('[markDone] Updated queue[' + idx + '] to status:', result.status);
     persistQueue(); // CRITICAL: Save updated queue to storage
+    if (result.status === 'done' || result.status === 'error' || result.status === 'skipped') {
+      removeQueueItemData(queue[idx].id).catch((e) => console.log('[markDone] Error removing item data:', e));
+    }
   } else {
     console.log('[markDone] WARNING: Item not found in queue!');
   }
@@ -538,7 +653,7 @@ function markDone(result) {
           autoPauseState: {
             isPaused: true,
             endTime: autoPauseEndTime,
-            queue: queue.map(q => ({ name: q.name, type: q.type, status: q.status, size: q.size })), // Without data (too large)
+            queue: queue.map(q => ({ id: q.id, name: q.name, type: q.type, status: q.status, size: q.size })), // Without data (too large)
             workerTabId
           }
         });
@@ -573,8 +688,16 @@ function markDone(result) {
   const hasPendingOrProcessing = queue.some(q => q.status === 'pending' || q.status === 'processing');
   console.log('[markDone] hasPendingOrProcessing:', hasPendingOrProcessing);
   if (!hasPendingOrProcessing && queue.length > 0) {
-    console.log('[markDone] All items done, clearing persisted queue');
-    chrome.storage.local.remove('persistedQueue');
+    console.log('[markDone] All items done, clearing queue and persisted state');
+    chrome.storage.local.remove(['persistedQueue', 'manualPauseState', 'autoPauseState', 'vectorizer-active-session']);
+    queue = [];
+    isRunning = false;
+    isPaused = false;
+    processedCount = 0;
+    autoPauseEndTime = null;
+    workerTabId = null;
+    broadcastQueue();
+    return;
   }
 
   const waitMs = delaySeconds > 0 ? delaySeconds * 1000 : 0;
@@ -595,7 +718,7 @@ function markDone(result) {
 }
 
 function sanitizedQueue() {
-  return queue.map(({ name, type, status, data, size }) => ({ name, type, status, data, size }));
+  return queue.map(({ id, name, type, status, data, size }) => ({ id, name, type, status, data, size }));
 }
 
 function broadcastQueue() {
@@ -696,73 +819,75 @@ function registerDownloadHandler() {
 
 // Load persisted auto-pause state
 function loadAutoPauseState() {
-  // First, check general Manual Pause state (Pricing/User pause)
   chrome.storage.local.get(['manualPauseState'], (res) => {
-    try {
-      if (res.manualPauseState && res.manualPauseState.queue) {
-        console.log('[loadAutoPauseState] Found manualPauseState, restoring visual queue...');
-        queue = res.manualPauseState.queue || [];
-        isPaused = true;
-        isRunning = false;
-      }
-    } catch (_) { }
-
-    // Then check Auto Pause state (overrides if exists)
-    try {
-      chrome.storage.local.get(['autoPauseState'], (res) => {
-        // Must resolve the promise regardless of outcome
-        try {
-          if (chrome.runtime.lastError) return;
-          const state = res?.autoPauseState;
-          if (state && state.isPaused && state.endTime) {
-            const now = Date.now();
-
-            // Restore queue and workerTabId if they exist
-            if (state.queue && state.queue.length > 0) {
-              queue = state.queue;
-              console.log('[loadAutoPauseState] Restored queue with', queue.length, 'items');
-            }
-            if (state.workerTabId) {
-              workerTabId = state.workerTabId;
-              console.log('[loadAutoPauseState] Restored workerTabId:', workerTabId);
-            }
-
-            if (state.endTime > now) {
-              // Pause is still active
-              console.log('[loadAutoPauseState] Restoring auto-pause state, ends at', new Date(state.endTime).toLocaleTimeString());
-              isPaused = true;
-              autoPauseEndTime = state.endTime;
-              isRunning = false;
-              // Recreates the alarm
-              chrome.alarms.clear('autoPauseResume');
-              chrome.alarms.create('autoPauseResume', {
-                when: state.endTime
-              });
-              broadcastQueue();
-            } else {
-              // Already expired, clears and resumes
-              console.log('[loadAutoPauseState] Auto-pause expired, resuming...');
-              chrome.storage.local.remove('autoPauseState');
-              isPaused = false;
-              autoPauseEndTime = null;
-              isRunning = false;
-              broadcastQueue();
-              kick();
-            }
-          } else {
-            // If no auto-pause, verify broadcast for manual pause
-            broadcastQueue();
-          }
-        } catch (innerErr) {
-          console.log('[loadAutoPauseState] inner error', innerErr);
-        } finally {
-          if (stateReadyPromiseResolve) stateReadyPromiseResolve();
+    (async () => {
+      try {
+        if (res.manualPauseState && res.manualPauseState.queue) {
+          console.log('[loadAutoPauseState] Found manualPauseState, restoring visual queue...');
+          queue = (res.manualPauseState.queue || []).map((item, index) => ({ ...item, id: item.id || createQueueItemId(item, index) }));
+          await hydrateQueueData(queue);
+          requeueProcessingItems('load-manual-pause');
+          isPaused = true;
+          isRunning = false;
         }
-      });
-    } catch (e) {
-      console.log('[loadAutoPauseState] error', e);
-      if (stateReadyPromiseResolve) stateReadyPromiseResolve();
-    }
+      } catch (e) {
+        console.log('[loadAutoPauseState] manual state error', e);
+      }
+
+      try {
+        chrome.storage.local.get(['autoPauseState'], (res) => {
+          (async () => {
+            try {
+              if (chrome.runtime.lastError) return;
+              const state = res?.autoPauseState;
+              if (state && state.isPaused && state.endTime) {
+                const now = Date.now();
+
+                if (state.queue && state.queue.length > 0) {
+                  queue = state.queue.map((item, index) => ({ ...item, id: item.id || createQueueItemId(item, index) }));
+                  await hydrateQueueData(queue);
+                  requeueProcessingItems('load-auto-pause');
+                  console.log('[loadAutoPauseState] Restored queue with', queue.length, 'items');
+                }
+                if (state.workerTabId) {
+                  workerTabId = state.workerTabId;
+                  console.log('[loadAutoPauseState] Restored workerTabId:', workerTabId);
+                }
+
+                if (state.endTime > now) {
+                  console.log('[loadAutoPauseState] Restoring auto-pause state, ends at', new Date(state.endTime).toLocaleTimeString());
+                  isPaused = true;
+                  autoPauseEndTime = state.endTime;
+                  isRunning = false;
+                  chrome.alarms.clear('autoPauseResume');
+                  chrome.alarms.create('autoPauseResume', {
+                    when: state.endTime
+                  });
+                  broadcastQueue();
+                } else {
+                  console.log('[loadAutoPauseState] Auto-pause expired, resuming...');
+                  chrome.storage.local.remove('autoPauseState');
+                  isPaused = false;
+                  autoPauseEndTime = null;
+                  isRunning = false;
+                  broadcastQueue();
+                  kick();
+                }
+              } else {
+                broadcastQueue();
+              }
+            } catch (innerErr) {
+              console.log('[loadAutoPauseState] inner error', innerErr);
+            } finally {
+              if (stateReadyPromiseResolve) stateReadyPromiseResolve();
+            }
+          })();
+        });
+      } catch (e) {
+        console.log('[loadAutoPauseState] error', e);
+        if (stateReadyPromiseResolve) stateReadyPromiseResolve();
+      }
+    })();
   });
 }
 
@@ -771,7 +896,7 @@ function persistQueueState() {
     chrome.storage.local.set({
       manualPauseState: {
         isPaused: true,
-        queue: queue.map(q => ({ name: q.name, type: q.type, status: q.status, size: q.size })) // Light backup
+        queue: queue.map(q => ({ id: q.id, name: q.name, type: q.type, status: q.status, size: q.size })) // Light backup
       }
     });
   } catch (_) { }
@@ -859,9 +984,10 @@ function sendProcessMessage(tabId, item, position, total, attempt = 0) {
       if (!isReady) {
         console.log('[sendProcessMessage] Content script not ready, will retry...');
         // Mark as pending and try again later
-        const idx = queue.findIndex(q => q.name === item.name);
+        const idx = queue.findIndex(q => (item.id && q.id === item.id) || q.name === item.name);
         if (idx >= 0) queue[idx].status = 'pending';
         isRunning = false;
+        persistQueue();
         // Try to kick again after a longer delay
         setTimeout(() => kick(), 3000);
         return resolve();
@@ -878,9 +1004,10 @@ function sendProcessMessage(tabId, item, position, total, attempt = 0) {
         } else {
           console.log('[sendProcessMessage] Max retries reached, marking as pending');
           // refile to pending so it can retry later
-          const idx = queue.findIndex(q => q.name === item.name);
+          const idx = queue.findIndex(q => (item.id && q.id === item.id) || q.name === item.name);
           if (idx >= 0) queue[idx].status = 'pending';
           isRunning = false;
+          persistQueue();
           return resolve();
         }
       }
@@ -890,11 +1017,12 @@ function sendProcessMessage(tabId, item, position, total, attempt = 0) {
   });
 }
 
-function retryItem(name) {
-  const idx = queue.findIndex(q => q.name === name);
+function retryItem(nameOrId) {
+  const idx = queue.findIndex(q => q.id === nameOrId || q.name === nameOrId);
   if (idx >= 0) {
     queue[idx].status = 'pending';
     isRunning = false;
+    persistQueue();
     broadcastQueue();
     kick();
   }

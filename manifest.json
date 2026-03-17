@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Batch Vectorizer - Unofficial Tool",
-  "version": "1.5.7",
+  "version": "1.5.8",
   "permissions": [
     "tabs",
     "scripting",
     "downloads",
     "activeTab",
     "alarms",
-    "storage"
+    "storage",
+    "unlimitedStorage"
   ],
   "host_permissions": [
     "https://*.vectorizer.ai/*",

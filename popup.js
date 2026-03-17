@@ -30,6 +30,7 @@ const buyLicenseLink = document.getElementById('buyLicenseLink');
 const GUMROAD_PRODUCT_ID = 'wiMaBP3bXVyY4UCrBeQEfQ==';
 
 let files = [];
+const DRAFT_FILES_KEY = 'vectorizer-draft-files';
 let previews = new Map(); // name -> objectURL
 let isPaused = false;
 let isProcessing = false;
@@ -52,8 +53,12 @@ function initLanguageSelector() {
     if (files.length > 0) {
       renderLocalSelection();
     } else {
-      chrome.runtime.sendMessage({ type: 'queue:get' }, (res) => {
-        if (res && res.queue) renderQueue(res.queue);
+      chrome.runtime.sendMessage({ type: 'queue:get' }, async (res) => {
+        if (res && res.queue && res.queue.length > 0) {
+          renderQueue(res.queue);
+        } else {
+          await restoreDraftSelection();
+        }
       });
     }
   };
@@ -136,8 +141,13 @@ function applyTranslations() {
   if (verEl) verEl.textContent = manifest.version;
 
   // Re-render queue with correct language
-  chrome.runtime.sendMessage({ type: 'queue:get' }, (res) => {
-    if (res && res.queue) renderQueue(res.queue);
+  chrome.runtime.sendMessage({ type: 'queue:get' }, async (res) => {
+    if (res && res.queue && res.queue.length > 0) {
+      renderQueue(res.queue);
+      return;
+    }
+
+    await restoreDraftSelection();
   });
 })();
 
@@ -218,6 +228,75 @@ function showLicenseError(msg) {
   licenseError.style.display = 'block';
 }
 
+async function fileToDraft(file) {
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+
+  const dimensions = await getImageDimensions(file);
+  return {
+    id: globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `draft-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    name: file.name,
+    type: file.type,
+    size: file.size,
+    dataUrl,
+    width: dimensions.width,
+    height: dimensions.height,
+    megapixels: (dimensions.width * dimensions.height) / 1000 / 1000
+  };
+}
+
+function dataUrlToByteArray(dataUrl) {
+  const base64 = String(dataUrl || '').split(',')[1] || '';
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return Array.from(bytes);
+}
+
+async function saveDraftSelection() {
+  await chrome.storage.local.set({ [DRAFT_FILES_KEY]: files });
+}
+
+async function clearDraftSelection() {
+  await chrome.storage.local.remove(DRAFT_FILES_KEY);
+}
+
+async function restoreDraftSelection() {
+  const res = await chrome.storage.local.get([DRAFT_FILES_KEY]);
+  files = Array.isArray(res?.[DRAFT_FILES_KEY]) ? res[DRAFT_FILES_KEY] : [];
+  renderLocalSelection();
+}
+
+async function setDraftFilesFromInput(inputFiles) {
+  const draftFiles = await Promise.all(inputFiles.map(fileToDraft));
+  const oversizedMpFiles = draftFiles.filter(f => (f.width * f.height) > MAX_IMAGE_PIXELS);
+  const validDraftFiles = draftFiles.filter(f => (f.width * f.height) <= MAX_IMAGE_PIXELS);
+
+  if (oversizedMpFiles.length > 0) {
+    const fileNames = oversizedMpFiles
+      .map(f => `${f.name} (${(f.megapixels || ((f.width * f.height) / 1000 / 1000)).toFixed(1)}MP)`)
+      .join(', ');
+    showMegapixelError(fileNames);
+  }
+
+  if (validDraftFiles.length > 0) {
+    const existingBySignature = new Set(files.map(f => `${f.name}::${f.size}::${f.width}::${f.height}`));
+    const filesToAdd = validDraftFiles.filter(f => !existingBySignature.has(`${f.name}::${f.size}::${f.width}::${f.height}`));
+    files = [...files, ...filesToAdd];
+    await saveDraftSelection();
+    renderLocalSelection();
+    highlightQueue();
+    return;
+  }
+
+  await saveDraftSelection();
+  renderLocalSelection();
+}
+
 if (buyLicenseLink) {
   buyLicenseLink.onclick = (e) => {
     e.preventDefault();
@@ -225,10 +304,8 @@ if (buyLicenseLink) {
   }
 }
 
-fileInput.onchange = () => {
-  files = [...fileInput.files];
-  renderLocalSelection();
-  highlightQueue(); // Trigger animation
+fileInput.onchange = async () => {
+  await setDraftFilesFromInput([...fileInput.files]);
 };
 
 // Drag and Drop handlers
@@ -242,15 +319,13 @@ dropzone.addEventListener('dragleave', (e) => {
   dropzone.classList.remove('dragover');
 });
 
-dropzone.addEventListener('drop', (e) => {
+dropzone.addEventListener('drop', async (e) => {
   e.preventDefault();
   dropzone.classList.remove('dragover');
 
   const droppedFiles = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
   if (droppedFiles.length > 0) {
-    files = droppedFiles;
-    renderLocalSelection();
-    highlightQueue(); // Trigger animation
+    await setDraftFilesFromInput(droppedFiles);
   }
 });
 
@@ -278,7 +353,9 @@ if (infoBtn && infoModal && closeModal) {
 // Maximum file size limits (to avoid Chrome 64MB message serialization limit)
 // Byte arrays expand ~4x when serialized to JSON, so keep limits conservative
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB per file
-const MAX_TOTAL_SIZE = 12 * 1024 * 1024; // 12MB total
+const MAX_TOTAL_SIZE = 60 * 1024 * 1024; // 60MB total
+const MAX_IMAGE_MEGAPIXELS = 3;
+const MAX_IMAGE_PIXELS = MAX_IMAGE_MEGAPIXELS * 1000 * 1000;
 
 startBtn.onclick = async () => {
   if (!files.length) return;
@@ -301,6 +378,18 @@ startBtn.onclick = async () => {
     return;
   }
 
+  const oversizedMpFiles = files.filter(f => (f.width * f.height) > MAX_IMAGE_PIXELS);
+  if (oversizedMpFiles.length > 0) {
+    const fileNames = oversizedMpFiles
+      .map(f => `${f.name} (${(((f.width * f.height) / 1000 / 1000)).toFixed(1)}MP)`)
+      .join(', ');
+    showMegapixelError(fileNames);
+    files = files.filter(f => (f.width * f.height) <= MAX_IMAGE_PIXELS);
+    await saveDraftSelection();
+    renderLocalSelection();
+    return;
+  }
+
   // Check total payload size
   const totalSize = files.reduce((sum, f) => sum + f.size, 0);
   if (totalSize > MAX_TOTAL_SIZE) {
@@ -313,25 +402,19 @@ startBtn.onclick = async () => {
   startBtn.disabled = true;
 
   try {
-    const payload = await Promise.all(files.map(async f => {
-      // Original method: byte array
-      const data = Array.from(new Uint8Array(await f.arrayBuffer()));
-
-      // Extract image dimensions
-      const dimensions = await getImageDimensions(f);
-
-      return {
-        name: f.name,
-        type: f.type,
-        size: f.size,
-        data,
-        width: dimensions.width,
-        height: dimensions.height
-      };
+    const payload = files.map(f => ({
+      id: f.id,
+      name: f.name,
+      type: f.type,
+      size: f.size,
+      data: dataUrlToByteArray(f.dataUrl),
+      width: f.width,
+      height: f.height
     }));
 
     chrome.runtime.sendMessage({ type: 'queue:add', items: payload });
     files = [];
+    await clearDraftSelection();
     renderLocalSelection();
 
     // Brief success indication before removing loading
@@ -388,8 +471,13 @@ function showError(key) {
     </a>
   `;
 
-  // Insert before start button
-  startBtn.parentNode.insertBefore(errorDiv, startBtn);
+  // Insert below the upload area for immediate visibility
+  const queueSection = document.querySelector('.queue-section');
+  if (queueSection && queueSection.parentNode) {
+    queueSection.parentNode.insertBefore(errorDiv, queueSection);
+  } else {
+    startBtn.parentNode.insertBefore(errorDiv, startBtn);
+  }
 
   // Remove after 5 seconds
   setTimeout(() => {
@@ -398,6 +486,36 @@ function showError(key) {
 }
 
 // Show error for individual files that are too large
+function showMegapixelError(fileNames) {
+  const existingError = document.getElementById('error-msg');
+  if (existingError) existingError.remove();
+
+  const errorDiv = document.createElement('div');
+  errorDiv.id = 'error-msg';
+  errorDiv.style.cssText = `
+    background: #ef4444;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+  `;
+  errorDiv.innerHTML = `
+    <div style="margin-bottom: 8px;">${t('imageTooLargeMpTitle').replace('{limit}', MAX_IMAGE_MEGAPIXELS)}</div>
+    <div style="font-size: 10px; opacity: 0.9; word-break: break-word;">${fileNames}</div>
+  `;
+
+  const queueSection = document.querySelector('.queue-section');
+  if (queueSection && queueSection.parentNode) {
+    queueSection.parentNode.insertBefore(errorDiv, queueSection);
+  } else {
+    startBtn.parentNode.insertBefore(errorDiv, startBtn);
+  }
+  setTimeout(() => errorDiv.remove(), 9000);
+}
+
 function showFileSizeError(fileNames) {
   const existingError = document.getElementById('error-msg');
   if (existingError) existingError.remove();
@@ -419,7 +537,12 @@ function showFileSizeError(fileNames) {
     <div style="font-size: 10px; opacity: 0.9; word-break: break-all;">${fileNames}</div>
   `;
 
-  startBtn.parentNode.insertBefore(errorDiv, startBtn);
+  const queueSection = document.querySelector('.queue-section');
+  if (queueSection && queueSection.parentNode) {
+    queueSection.parentNode.insertBefore(errorDiv, queueSection);
+  } else {
+    startBtn.parentNode.insertBefore(errorDiv, startBtn);
+  }
   setTimeout(() => errorDiv.remove(), 8000);
 }
 
@@ -444,7 +567,12 @@ function showTotalSizeError(totalMB) {
     <div>⚠️ ${t('totalTooLarge').replace('{size}', totalMB)}</div>
   `;
 
-  startBtn.parentNode.insertBefore(errorDiv, startBtn);
+  const queueSection = document.querySelector('.queue-section');
+  if (queueSection && queueSection.parentNode) {
+    queueSection.parentNode.insertBefore(errorDiv, queueSection);
+  } else {
+    startBtn.parentNode.insertBefore(errorDiv, startBtn);
+  }
   setTimeout(() => errorDiv.remove(), 8000);
 }
 
@@ -469,7 +597,12 @@ function showGenericSizeError() {
     <div>⚠️ ${t('serializationError')}</div>
   `;
 
-  startBtn.parentNode.insertBefore(errorDiv, startBtn);
+  const queueSection = document.querySelector('.queue-section');
+  if (queueSection && queueSection.parentNode) {
+    queueSection.parentNode.insertBefore(errorDiv, queueSection);
+  } else {
+    startBtn.parentNode.insertBefore(errorDiv, startBtn);
+  }
   setTimeout(() => errorDiv.remove(), 8000);
 }
 
@@ -611,20 +744,24 @@ pauseBtn.addEventListener('click', () => {
 });
 
 // Cancel Button
-cancelBtn.addEventListener('click', () => {
+cancelBtn.addEventListener('click', async () => {
   if (confirm('Cancelar processamento e limpar a fila?')) {
     chrome.runtime.sendMessage({ type: 'queue:cancel' });
+    files = [];
+    await clearDraftSelection();
     isPaused = false;
     isProcessing = false;
+    renderLocalSelection();
     updateControlButtons();
   }
 });
 
 // Clear Queue Button
 if (clearQueueBtn) {
-  clearQueueBtn.addEventListener('click', () => {
+  clearQueueBtn.addEventListener('click', async () => {
     // Clear local files
     files = [];
+    await clearDraftSelection();
     renderLocalSelection();
 
     // CRITICAL: Also clear the queue in the background
@@ -639,13 +776,17 @@ if (clearQueueBtn) {
 
   // Hover effect
   clearQueueBtn.addEventListener('mouseenter', () => {
-    clearQueueBtn.style.color = '#ef4444';
-    clearQueueBtn.style.background = '#fef2f2';
+    clearQueueBtn.style.color = '#ffffff';
+    clearQueueBtn.style.background = '#dc2626';
+    clearQueueBtn.style.borderColor = '#dc2626';
+    clearQueueBtn.style.boxShadow = '0 8px 18px rgba(220, 38, 38, 0.22)';
   });
 
   clearQueueBtn.addEventListener('mouseleave', () => {
-    clearQueueBtn.style.color = '#9ca3af';
-    clearQueueBtn.style.background = 'transparent';
+    clearQueueBtn.style.color = '#dc2626';
+    clearQueueBtn.style.background = '#fff5f5';
+    clearQueueBtn.style.borderColor = '#fecaca';
+    clearQueueBtn.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.08)';
   });
 }
 
@@ -683,10 +824,12 @@ function updateFolderSummary(folder) {
 
 function renderLocalSelection() {
   renderQueue(files.map(f => ({
+    id: f.id,
     name: f.name,
     type: f.type,
+    size: f.size,
     status: 'pending',
-    data: Array.from(new Uint8Array()) // no real preview here
+    dataUrl: f.dataUrl
   })));
 }
 
@@ -775,6 +918,9 @@ function labelFromStatus(status) {
 }
 
 function thumbUrl(item) {
+  if (item?.dataUrl) {
+    return item.dataUrl;
+  }
   if (item?.data?.length) {
     const blob = new Blob([new Uint8Array(item.data)], { type: item.type || 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
