@@ -2,6 +2,7 @@ let pricingHandled = false;
 let pricingRedirected = false;
 let isRedirecting = false;
 let shouldAbortProcessing = false; // Flag to abort current processing when paused
+const ACTIVE_SESSION_KEY = 'vectorizer-active-session';
 
 // Initialization function - called at the end of the script
 function initContentScript() {
@@ -361,6 +362,7 @@ async function processFile(item, format = 'eps', meta = {}, removeBackground = f
 
     setResumeFlag({
       name: item.name,
+      itemId: item.id,
       downloadUrl: currentDownloadUrl,
       format,
       position: meta?.position,
@@ -397,7 +399,7 @@ async function processFile(item, format = 'eps', meta = {}, removeBackground = f
       stopKeepAlive(); // Stop keep-alive before returning
       return;
     }
-    sendDone(item.name, 'done', currentDownloadUrl, null, meta);
+    sendDone(item.name, 'done', currentDownloadUrl, null, { ...meta, itemId: item.id });
   } catch (e) {
     log('[processFile] error', e);
     if (pricingRedirected || isPricingPage()) {
@@ -405,7 +407,7 @@ async function processFile(item, format = 'eps', meta = {}, removeBackground = f
       requestRetry(item?.name);
       return;
     }
-    sendDone(item?.name || 'unknown', 'error', null, e, meta);
+    sendDone(item?.name || 'unknown', 'error', null, e, { ...meta, itemId: item?.id });
   }
 }
 
@@ -661,7 +663,13 @@ function selectFormatRadio(format = 'eps') {
 
 function setResumeFlag(data) {
   try {
-    sessionStorage.setItem('vectorizer-auto-resume', JSON.stringify({ ...data, ts: Date.now() }));
+    const payload = { ...data, ts: Date.now() };
+    sessionStorage.setItem('vectorizer-auto-resume', JSON.stringify(payload));
+    chrome.storage.local.set({ [ACTIVE_SESSION_KEY]: payload }, () => {
+      if (chrome.runtime.lastError) {
+        log('[setResumeFlag] storage error', chrome.runtime.lastError.message);
+      }
+    });
     log('[setResumeFlag] saved for', data.name);
   } catch (e) {
     log('[setResumeFlag] error', e);
@@ -671,6 +679,11 @@ function setResumeFlag(data) {
 function clearResumeFlag() {
   try {
     sessionStorage.removeItem('vectorizer-auto-resume');
+    chrome.storage.local.remove(ACTIVE_SESSION_KEY, () => {
+      if (chrome.runtime.lastError) {
+        log('[clearResumeFlag] storage error', chrome.runtime.lastError.message);
+      }
+    });
     log('[clearResumeFlag] cleared');
   } catch (e) {
     log('[clearResumeFlag] error', e);
@@ -701,7 +714,7 @@ function autoResumeFromSession() {
     );
     clickOptionsSubmitAfterDelay(data.name, data.downloadUrl, data.format || 'eps').finally(() => {
       clearResumeFlag();
-      sendDone(data.name, 'done', data.downloadUrl, null, { position: data.position, total: data.total });
+      sendDone(data.name, 'done', data.downloadUrl, null, { position: data.position, total: data.total, itemId: data.itemId });
     });
   } catch (e) {
     log('[autoResumeFromSession] error', e);
@@ -819,7 +832,7 @@ function sendDone(name, status, downloadUrl, err, meta = {}) {
     // Envia mensagem SIMPLES - sem retry
     chrome.runtime.sendMessage({
       type: 'poc:done',
-      result: { name, status, downloadUrl, error: err ? String(err) : undefined }
+      result: { id: meta?.itemId, name, status, downloadUrl, error: err ? String(err) : undefined }
     }, (response) => {
       const lastError = chrome.runtime.lastError;
       if (lastError) {
@@ -1112,6 +1125,7 @@ function removeOverlay() {
     stopGlobalTimer();
     // Limpa dados de sessão
     sessionStorage.removeItem('vectorizer_resume');
+    clearResumeFlag();
   } catch (e) {
     log('[removeOverlay] error', e);
   }
@@ -1622,13 +1636,42 @@ function tryShowOverlayOnImagePage() {
         log('[tryShowOverlayOnImagePage] overlay shown for:', data.name);
       }
     } else {
-      // If there is no session data but we are on the image page,
-      // show a generic overlay indicating that it is processing
-      log('[tryShowOverlayOnImagePage] no session data, showing generic overlay');
-      showOverlay(
-        { name: 'Processing image...', data: [], type: '' },
-        { position: '?', total: '?' }
-      );
+      chrome.storage.local.get([ACTIVE_SESSION_KEY], (storageRes) => {
+        const data = storageRes?.[ACTIVE_SESSION_KEY];
+        if (data?.name) {
+          log('[tryShowOverlayOnImagePage] restored from chrome.storage.local:', data);
+          showOverlay(
+            { name: data.name, data: [], type: data.type || '' },
+            { position: data.position || '?', total: data.total || '?' }
+          );
+          return;
+        }
+
+        chrome.runtime.sendMessage({ type: 'queue:get' }, (queueRes) => {
+          if (chrome.runtime.lastError) {
+            log('[tryShowOverlayOnImagePage] queue:get error:', chrome.runtime.lastError.message);
+            return;
+          }
+
+          const activeItem = queueRes?.queue?.find(q => q.status === 'processing') || queueRes?.queue?.find(q => q.status === 'pending');
+          const total = queueRes?.queue?.length || '?';
+          const position = activeItem ? (queueRes.queue.findIndex(q => q.id === activeItem.id) + 1) : '?';
+
+          if (activeItem) {
+            log('[tryShowOverlayOnImagePage] restored from queue state:', activeItem.name);
+            showOverlay(
+              { name: activeItem.name, data: [], type: activeItem.type || '' },
+              { position, total }
+            );
+          } else {
+            log('[tryShowOverlayOnImagePage] no shared state, showing generic overlay');
+            showOverlay(
+              { name: 'Processing image...', data: [], type: '' },
+              { position: '?', total: '?' }
+            );
+          }
+        });
+      });
     }
   } catch (e) {
     log('[tryShowOverlayOnImagePage] error:', e);

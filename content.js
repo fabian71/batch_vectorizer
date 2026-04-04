@@ -25,6 +25,9 @@ function initContentScript() {
     tryShowOverlayOnImagePage();
   }
 
+  // Start monitoring for 'rapid-fire' error modals automatically
+  monitorErrorModal();
+
   // Check background pause state
   checkPauseState();
 }
@@ -42,6 +45,26 @@ function checkPauseState() {
   } catch (e) {
     log('[checkPauseState] error', e);
   }
+}
+
+// Monitor for the rapid-fire error modal and automatically click retry
+function monitorErrorModal() {
+  setInterval(() => {
+    const errorDialog = document.querySelector('#App-Error-Dialog');
+    const retryBtn = document.querySelector('#App-Error-RetryButton');
+    
+    if (errorDialog && retryBtn) {
+      const style = window.getComputedStyle(errorDialog);
+      // Only click if it's actually visible
+      if (style.display !== 'none' && style.visibility !== 'hidden') {
+        log('[monitorErrorModal] Error modal "Too many rapid-fire requests" detected. Clicking Retry.');
+        retryBtn.click();
+        
+        // Hide the dialog to prevent multiple clicks if it takes a moment to close
+        errorDialog.style.display = 'none';
+      }
+    }
+  }, 1000);
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {

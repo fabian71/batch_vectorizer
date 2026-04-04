@@ -8,7 +8,7 @@ const LOCALES = {
             subtitle: "Process multiple images automatically",
             dropzone: "Drag images here or",
             selectFiles: "Select files",
-            warning: "Limit: 2MB per file, 12MB total. Larger files may cause errors.",
+            warning: "Limit: 2MB per file, 60MB total. Larger files may cause errors.",
             queue: "Processing queue",
             processed: "processed",
             of: "of",
@@ -55,8 +55,9 @@ const LOCALES = {
             step2SolveCaptcha: "2. Solve captcha",
             step3ClickResume: "3. Click \"Resume\" in extension",
             fileTooLarge: "File too large! Maximum 2MB per file:",
-            totalTooLarge: "Total size too large! {size}MB exceeds the 12MB limit. Use fewer or smaller files.",
+            totalTooLarge: "Total size too large! {size}MB exceeds the 60MB limit. Use fewer or smaller files.",
             serializationError: "Error processing files. Try with smaller files.",
+            imageTooLargeMpTitle: "Image exceeds the {limit}MP limit and was not added:",
             randomPause: "Random pause interval (minutes)",
             min: "min"
         }
@@ -69,7 +70,7 @@ const LOCALES = {
             subtitle: "Processe múltiplas imagens automaticamente",
             dropzone: "Arraste imagens aqui ou",
             selectFiles: "Selecionar arquivos",
-            warning: "Limite: 2MB por arquivo, 12MB total. Arquivos maiores podem causar erros.",
+            warning: "Limite: 2MB por arquivo, 60MB total. Arquivos maiores podem causar erros.",
             queue: "Fila de processamento",
             processed: "processados",
             of: "de",
@@ -116,8 +117,9 @@ const LOCALES = {
             step2SolveCaptcha: "2. Resolva o captcha",
             step3ClickResume: "3. Clique em \"Continuar\" na extensao",
             fileTooLarge: "Arquivo muito grande! Maximo de 2MB por arquivo:",
-            totalTooLarge: "Tamanho total muito grande! {size}MB excede o limite de 12MB. Use menos arquivos ou arquivos menores.",
+            totalTooLarge: "Tamanho total muito grande! {size}MB excede o limite de 60MB. Use menos arquivos ou arquivos menores.",
             serializationError: "Erro ao processar arquivos. Tente com arquivos menores.",
+            imageTooLargeMpTitle: "A imagem excede o limite de {limit}MP e nao foi adicionada:",
             randomPause: "Intervalo de pausa aleatório (minutos)",
             min: "min"
         }
@@ -130,7 +132,7 @@ const LOCALES = {
             subtitle: "Procesa múltiples imágenes automáticamente",
             dropzone: "Arrastra imágenes aquí o",
             selectFiles: "Seleccionar archivos",
-            warning: "Limite: 2MB por archivo, 12MB total. Archivos mas grandes pueden causar errores.",
+            warning: "Limite: 2MB por archivo, 60MB total. Archivos mas grandes pueden causar errores.",
             queue: "Cola de procesamiento",
             processed: "procesados",
             of: "de",
@@ -177,8 +179,9 @@ const LOCALES = {
             step2SolveCaptcha: "2. Resolver captcha",
             step3ClickResume: "3. Haga clic en \"Continuar\" en la extension",
             fileTooLarge: "Archivo demasiado grande! Maximo 2MB por archivo:",
-            totalTooLarge: "Tamano total demasiado grande! {size}MB excede el limite de 12MB. Use menos archivos o archivos mas pequenos.",
+            totalTooLarge: "Tamano total demasiado grande! {size}MB excede el limite de 60MB. Use menos archivos o archivos mas pequenos.",
             serializationError: "Error al procesar archivos. Intente con archivos mas pequenos.",
+            imageTooLargeMpTitle: "La imagen supera el limite de {limit}MP y no fue agregada:",
             randomPause: "Intervalo de pausa aleatorio (minutos)",
             min: "min"
         }
@@ -191,7 +194,7 @@ const LOCALES = {
             subtitle: "Traitez plusieurs images automatiquement",
             dropzone: "Glissez des images ici ou",
             selectFiles: "Sélectionner des fichiers",
-            warning: "Recommandé: jusqu'à 100 images ou 100 Mo. Dépasser peut causer des ralentissements.",
+            warning: "Limite : 2 Mo par fichier, 60 Mo au total. Des fichiers plus volumineux peuvent provoquer des erreurs.",
             queue: "File de traitement",
             processed: "traités",
             of: "de",
@@ -249,7 +252,7 @@ const LOCALES = {
             subtitle: "Verarbeiten Sie mehrere Bilder automatisch",
             dropzone: "Bilder hierher ziehen oder",
             selectFiles: "Dateien auswählen",
-            warning: "Empfohlen: bis zu 100 Bilder oder 100MB. Überschreiten kann Verlangsamung verursachen.",
+            warning: "Limit: 2MB pro Datei, 60MB insgesamt. Groessere Dateien koennen Fehler verursachen.",
             queue: "Verarbeitungswarteschlange",
             processed: "verarbeitet",
             of: "von",
@@ -307,7 +310,7 @@ const LOCALES = {
             subtitle: "Elabora più immagini automaticamente",
             dropzone: "Trascina le immagini qui o",
             selectFiles: "Seleziona file",
-            warning: "Consigliato: fino a 100 immagini o 100MB. Superare può causare rallentamenti.",
+            warning: "Limite: 2MB per file, 60MB totali. File piu grandi possono causare errori.",
             queue: "Coda di elaborazione",
             processed: "elaborati",
             of: "di",
@@ -365,7 +368,7 @@ const LOCALES = {
             subtitle: "複数の画像を自動処理",
             dropzone: "画像をここにドラッグまたは",
             selectFiles: "ファイルを選択",
-            warning: "推奨: 100画像または100MBまで。超過すると遅延が発生する可能性があります。",
+            warning: "??: 1????2MB???60MB???????????????????????????????",
             queue: "処理キュー",
             processed: "処理済み",
             of: "/",
@@ -421,7 +424,7 @@ const LOCALES = {
             subtitle: "여러 이미지를 자동으로 처리",
             dropzone: "이미지를 여기에 드래그하거나",
             selectFiles: "파일 선택",
-            warning: "권장: 100개 이미지 또는 100MB까지. 초과 시 지연이 발생할 수 있습니다.",
+            warning: "??: ??? 2MB, ? 60MB. ? ? ??? ??? ??? ? ????.",
             queue: "처리 대기열",
             processed: "처리됨",
             of: "/",
@@ -477,7 +480,7 @@ const LOCALES = {
             subtitle: "Автоматическая обработка изображений",
             dropzone: "Перетащите изображения сюда или",
             selectFiles: "Выбрать файлы",
-            warning: "Рекомендуется: до 100 изображений или 100МБ. Превышение может вызвать замедление.",
+            warning: "?????: 2 ?? ?? ????, 60 ?? ?????. ????? ??????? ????? ????? ???????? ??????.",
             queue: "Очередь обработки",
             processed: "обработано",
             of: "из",
@@ -533,7 +536,7 @@ const LOCALES = {
             subtitle: "自动处理多张图片",
             dropzone: "将图片拖到这里或",
             selectFiles: "选择文件",
-            warning: "建议：最多100张图片或100MB。超过可能导致延迟或内存问题。",
+            warning: "??????? 2MB??? 60MB?????????????",
             queue: "处理队列",
             processed: "已处理",
             of: "/",
@@ -589,7 +592,7 @@ const LOCALES = {
             subtitle: "स्वचालित रूप से कई छवियों को संसाधित करें",
             dropzone: "छवियों को यहां खींचें या",
             selectFiles: "फ़ाइलें चुनें",
-            warning: "अनुशंसित: 100 छवियां या 100MB तक। अधिक होने पर धीमापन हो सकता है।",
+            warning: "????: ????? ????? 2MB, ??? 60MB? ???? ???? ??????? ?????? ???? ?? ???? ????",
             queue: "प्रसंस्करण कतार",
             processed: "संसाधित",
             of: "में से",
@@ -645,7 +648,7 @@ const LOCALES = {
             subtitle: "Proses banyak gambar secara otomatis",
             dropzone: "Seret gambar ke sini atau",
             selectFiles: "Pilih file",
-            warning: "Disarankan: hingga 100 gambar atau 100MB. Melebihi dapat menyebabkan kelambatan.",
+            warning: "Batas: 2MB per file, total 60MB. File yang lebih besar dapat menyebabkan error.",
             queue: "Antrian pemrosesan",
             processed: "diproses",
             of: "dari",
@@ -701,7 +704,7 @@ const LOCALES = {
             subtitle: "Automatyczne przetwarzanie wielu obrazów",
             dropzone: "Przeciągnij obrazy tutaj lub",
             selectFiles: "Wybierz pliki",
-            warning: "Zalecane: do 100 obrazów lub 100MB. Przekroczenie może spowodować spowolnienie.",
+            warning: "Limit: 2MB na plik, 60MB lacznie. Wieksze pliki moga powodowac bledy.",
             queue: "Kolejka przetwarzania",
             processed: "przetworzono",
             of: "z",
@@ -757,7 +760,7 @@ const LOCALES = {
             subtitle: "ประมวลผลหลายภาพโดยอัตโนมัติ",
             dropzone: "ลากภาพมาที่นี่หรือ",
             selectFiles: "เลือกไฟล์",
-            warning: "แนะนำ: สูงสุด 100 ภาพหรือ 100MB การเกินอาจทำให้ช้าลง",
+            warning: "????????: 2MB ??????? ?????????? 60MB ????????????????????????????????????????",
             queue: "คิวการประมวลผล",
             processed: "ประมวลผลแล้ว",
             of: "จาก",
@@ -813,7 +816,7 @@ const LOCALES = {
             subtitle: "Birden fazla görüntüyü otomatik işleyin",
             dropzone: "Görüntüleri buraya sürükleyin veya",
             selectFiles: "Dosya seçin",
-            warning: "Önerilen: 100 görüntü veya 100MB'a kadar. Aşmak yavaşlamaya neden olabilir.",
+            warning: "Limit: dosya basina 2MB, toplam 60MB. Daha buyuk dosyalar hatalara neden olabilir.",
             queue: "İşleme kuyruğu",
             processed: "işlendi",
             of: "/",
@@ -869,7 +872,7 @@ const LOCALES = {
             subtitle: "Tự động xử lý nhiều hình ảnh",
             dropzone: "Kéo hình ảnh vào đây hoặc",
             selectFiles: "Chọn tệp",
-            warning: "Khuyến nghị: tối đa 100 hình hoặc 100MB. Vượt quá có thể gây chậm.",
+            warning: "Gioi han: 2MB moi tep, tong cong 60MB. Tep lon hon co the gay loi.",
             queue: "Hàng đợi xử lý",
             processed: "đã xử lý",
             of: "/",
@@ -919,15 +922,25 @@ const LOCALES = {
 };
 
 // Variável local para cache do idioma
-let _currentLanguage = 'en';
+let _currentLanguage = 'pt';
 
 // Inicializa idioma do storage (chamado na inicialização)
+function getBrowserLanguageFallback() {
+    try {
+        const raw = String(navigator.language || navigator.userLanguage || 'pt').toLowerCase();
+        const short = raw.split('-')[0];
+        return LOCALES[short] ? short : 'en';
+    } catch (_) {
+        return 'pt';
+    }
+}
+
 async function initLanguage() {
     try {
         const result = await chrome.storage.local.get('vectorizer-language');
-        _currentLanguage = result['vectorizer-language'] || 'en';
+        _currentLanguage = result['vectorizer-language'] || getBrowserLanguageFallback();
     } catch (e) {
-        _currentLanguage = 'en';
+        _currentLanguage = getBrowserLanguageFallback();
     }
 }
 
