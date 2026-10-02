@@ -1,3 +1,6 @@
+// Image files live in IndexedDB (filestore.js); the queue only holds metadata.
+importScripts('filestore.js');
+
 let queue = [];
 let isRunning = false;
 let isPaused = false;
@@ -32,33 +35,20 @@ function getQueueItemStorageKey(id) {
   return `${QUEUE_ITEM_KEY_PREFIX}${id}`;
 }
 
-async function saveQueueItemData(item) {
-  if (!item?.id) return;
-  await chrome.storage.local.set({
-    [getQueueItemStorageKey(item.id)]: {
-      id: item.id,
-      data: item.data,
-      type: item.type,
-      width: item.width,
-      height: item.height,
-      size: item.size,
-      name: item.name
-    }
-  });
-}
-
-async function getQueueItemData(id) {
-  if (!id) return null;
-  const result = await chrome.storage.local.get(getQueueItemStorageKey(id));
-  return result?.[getQueueItemStorageKey(id)] || null;
-}
-
+// Removes the stored original of one item (its thumbnail stays for the queue list).
 async function removeQueueItemData(id) {
   if (!id) return;
-  await chrome.storage.local.remove(getQueueItemStorageKey(id));
+  await VecFileStore.removeFiles([id]);
 }
 
-async function clearQueueItemData() {
+// Removes originals and thumbnails of the given queue items.
+async function clearQueueFiles(ids) {
+  const valid = (ids || []).filter(Boolean);
+  if (valid.length > 0) await VecFileStore.remove(valid);
+}
+
+// Older versions kept the image bytes in chrome.storage.local; free that space.
+async function clearLegacyQueueItemData() {
   const allItems = await chrome.storage.local.get(null);
   const keys = Object.keys(allItems).filter((key) => key.startsWith(QUEUE_ITEM_KEY_PREFIX));
   if (keys.length > 0) {
@@ -66,22 +56,15 @@ async function clearQueueItemData() {
   }
 }
 
-async function hydrateQueueData(items) {
-  await Promise.all(items.map(async (item) => {
-    if (item?.data?.length || !item?.id) return;
-    try {
-      const stored = await getQueueItemData(item.id);
-      if (stored?.data?.length) {
-        item.data = stored.data;
-        item.type = item.type || stored.type;
-        item.width = item.width || stored.width;
-        item.height = item.height || stored.height;
-        item.size = item.size || stored.size;
-      }
-    } catch (e) {
-      console.log('[hydrateQueueData] Error hydrating item', item?.name, e);
-    }
-  }));
+// Reads a Blob as base64 so a single file can be handed to the content script.
+async function blobToBase64(blob) {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const CHUNK = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
 }
 
 function requeueProcessingItems(reason = 'unknown') {
@@ -125,6 +108,7 @@ function persistQueue() {
           type: q.type,
           status: q.status,
           size: q.size,
+          removeBackground: Boolean(q.removeBackground),
           // data: q.data, // REMOVED: Binary data causes quota exceeded error
           width: q.width,
           height: q.height
@@ -165,19 +149,7 @@ function restoreQueueFromStorage() {
           workerTabId = state.workerTabId;
           processedCount = state.processedCount || 0;
 
-          await hydrateQueueData(queue);
           requeueProcessingItems('restoreQueueFromStorage');
-
-          const missingDataItems = queue.filter(q =>
-            (q.status === 'pending' || q.status === 'processing') && (!q.data || q.data.length === 0)
-          );
-
-          if (missingDataItems.length > 0) {
-            console.log('[restoreQueueFromStorage] Missing binary data for', missingDataItems.length, 'pending items');
-            missingDataItems.forEach(item => {
-              if (item.status === 'processing') item.status = 'pending';
-            });
-          }
 
           console.log('[restoreQueueFromStorage] Restored queue with', queue.length, 'items');
           console.log('[restoreQueueFromStorage] Queue items:', queue.map(q => `${q.name}:${q.status}`));
@@ -191,7 +163,7 @@ function restoreQueueFromStorage() {
         } else {
           console.log('[restoreQueueFromStorage] Queue too old, clearing');
           chrome.storage.local.remove('persistedQueue');
-          clearQueueItemData().catch((e) => console.log('[restoreQueueFromStorage] Error clearing stored queue items:', e));
+          clearQueueFiles(state.queue.map(q => q.id)).catch((e) => console.log('[restoreQueueFromStorage] Error clearing stored queue items:', e));
         }
       } else {
         console.log('[restoreQueueFromStorage] No persisted queue found in storage');
@@ -259,16 +231,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       chrome.storage.local.remove('autoPauseState');
       chrome.storage.local.remove('manualPauseState');
       chrome.storage.local.remove('vectorizer-active-session');
-      await clearQueueItemData();
 
       const items = (msg.items || []).map((it, index) => ({
         ...it,
         id: createQueueItemId(it, index),
+        // Per-item option; falls back to the global default when the popup doesn't send it
+        removeBackground: typeof it.removeBackground === 'boolean' ? it.removeBackground : removeBackground,
         status: 'pending'
       }));
 
       queue.push(...items);
-      await Promise.all(items.map(item => saveQueueItemData(item)));
+
+      // Drop files left over from previous queues; the new items were stored by the popup.
+      await VecFileStore.prune(items.map(item => item.id)).catch((e) => console.log('[queue:add] Error pruning file store:', e));
+      clearLegacyQueueItemData().catch(() => { });
 
       console.log('[queue:add] Queue now has', queue.length, 'items');
       console.log('[queue:add] Queue items:', queue.map(q => q.name));
@@ -276,7 +252,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       persistQueue();
       broadcastQueue();
       kick();
-      sendResponse?.({ queued: queue.length });
+      sendResponse?.({ queued: queue.length, queue: sanitizedQueue() });
     })().catch((e) => {
       console.log('[queue:add] Error:', e);
       sendResponse?.({ error: String(e) });
@@ -336,6 +312,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     removeBackground = Boolean(msg.removeBackground);
     persistConfig();
     sendResponse?.({ removeBackground });
+    return;
+  }
+  if (msg.type === 'queue:updateItemRemoveBackground') {
+    const target = queue.find(q => q.id === msg.itemId);
+    // Only items that haven't started yet can still change
+    if (target && target.status === 'pending') {
+      target.removeBackground = Boolean(msg.removeBackground);
+      persistQueue();
+    }
+    broadcastQueue();
+    sendResponse?.({ ok: Boolean(target) });
+    return;
+  }
+  if (msg.type === 'queue:setAllRemoveBackground') {
+    const value = Boolean(msg.removeBackground);
+    queue.forEach(q => {
+      if (q.status === 'pending') q.removeBackground = value;
+    });
+    persistQueue();
+    broadcastQueue();
+    sendResponse?.({ ok: true });
     return;
   }
   if (msg.type === 'config:setAutoPause') {
@@ -412,6 +409,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // CRITICAL: Set flag to prevent persistQueue from saving empty queue
     queueExplicitlyCancelled = true;
 
+    const cancelledIds = queue.map(q => q.id);
     queue = [];
     isRunning = false;
     isPaused = false;
@@ -429,7 +427,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         console.log('[background] Error clearing storage:', chrome.runtime.lastError);
       }
     });
-    clearQueueItemData().catch((e) => console.log('[background] Error clearing stored queue items:', e));
+    clearQueueFiles(cancelledIds).catch((e) => console.log('[background] Error clearing stored queue items:', e));
     chrome.storage.local.remove('vectorizer-active-session');
 
     console.log('[background] Queue cleared, broadcasting update...');
@@ -476,32 +474,52 @@ async function kick() {
     return;
   }
 
-  // Checks if the item has data (it might not if restored from storage)
-  if (!next.data || next.data.length === 0) {
-    console.log('[kick] Item without data, skipping:', next.name);
+  // Claim the run before any await so concurrent kick() calls cannot start a second item.
+  isRunning = true;
+
+  // The original is read from IndexedDB only now, one file at a time.
+  let fileBlob = null;
+  try {
+    fileBlob = await VecFileStore.getFile(next.id);
+  } catch (e) {
+    console.log('[kick] Error reading stored file:', next.name, e);
+  }
+
+  if (!fileBlob) {
+    console.log('[kick] Item without stored file, skipping:', next.name);
+    isRunning = false;
     next.status = 'skipped'; // Marks as skipped
     persistQueue(); // Save skipped status
     broadcastQueue();
-    removeQueueItemData(next.id).catch((e) => console.log('[kick] Error clearing skipped item data:', e));
     // Continues to the next
     setTimeout(() => kick(), 100);
     return;
   }
 
-
-
   console.log('[kick] Processing:', next.name);
   next.status = 'processing';
   persistQueue(); // CRITICAL: Save processing status before sending to content script
   broadcastQueue();
-  isRunning = true;
-  const tab = await ensureTab();
-  const position = queue.findIndex(q => q.id === next.id || q.name === next.name) + 1;
-  await sendProcessMessage(tab.id, stripData(next), position, queue.length);
+  try {
+    const tab = await ensureTab();
+    const position = queue.findIndex(q => q.id === next.id || q.name === next.name) + 1;
+    const payload = stripData(next);
+    payload.type = payload.type || fileBlob.type;
+    payload.dataBase64 = await blobToBase64(fileBlob);
+    fileBlob = null;
+    await sendProcessMessage(tab.id, payload, position, queue.length);
+  } catch (e) {
+    console.log('[kick] Error starting item, will retry:', next.name, e);
+    if (next.status === 'processing') next.status = 'pending';
+    isRunning = false;
+    persistQueue();
+    broadcastQueue();
+    setTimeout(() => kick(), 3000);
+  }
 }
 
 function stripData(item) {
-  return { id: item.id, name: item.name, type: item.type, data: item.data, width: item.width, height: item.height };
+  return { id: item.id, name: item.name, type: item.type, width: item.width, height: item.height, removeBackground: item.removeBackground };
 }
 
 async function ensureTab() {
@@ -718,7 +736,7 @@ function markDone(result) {
 }
 
 function sanitizedQueue() {
-  return queue.map(({ id, name, type, status, data, size }) => ({ id, name, type, status, data, size }));
+  return queue.map(({ id, name, type, status, size, removeBackground }) => ({ id, name, type, status, size, removeBackground: Boolean(removeBackground) }));
 }
 
 function broadcastQueue() {
@@ -825,7 +843,6 @@ function loadAutoPauseState() {
         if (res.manualPauseState && res.manualPauseState.queue) {
           console.log('[loadAutoPauseState] Found manualPauseState, restoring visual queue...');
           queue = (res.manualPauseState.queue || []).map((item, index) => ({ ...item, id: item.id || createQueueItemId(item, index) }));
-          await hydrateQueueData(queue);
           requeueProcessingItems('load-manual-pause');
           isPaused = true;
           isRunning = false;
@@ -845,7 +862,6 @@ function loadAutoPauseState() {
 
                 if (state.queue && state.queue.length > 0) {
                   queue = state.queue.map((item, index) => ({ ...item, id: item.id || createQueueItemId(item, index) }));
-                  await hydrateQueueData(queue);
                   requeueProcessingItems('load-auto-pause');
                   console.log('[loadAutoPauseState] Restored queue with', queue.length, 'items');
                 }
@@ -994,7 +1010,7 @@ function sendProcessMessage(tabId, item, position, total, attempt = 0) {
       }
     }
 
-    chrome.tabs.sendMessage(tabId, { type: 'poc:process', item, format: downloadFormat, removeBackground, meta: { position, total } }, () => {
+    chrome.tabs.sendMessage(tabId, { type: 'poc:process', item, format: downloadFormat, removeBackground: typeof item.removeBackground === 'boolean' ? item.removeBackground : removeBackground, meta: { position, total } }, () => {
       if (chrome.runtime.lastError) {
         console.log('[sendProcessMessage] ERROR:', chrome.runtime.lastError.message);
         if (attempt < 5) { // Increased max retries

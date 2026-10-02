@@ -156,10 +156,22 @@
     }
 
     .queue-header {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        "title title"
+        "actions stats";
       align-items: center;
+      gap: 8px;
       margin-bottom: 10px;
+    }
+
+    .queue-header-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      grid-area: title;
     }
 
     .queue-title {
@@ -174,11 +186,48 @@
       background: #fff;
       padding: 4px 10px;
       border-radius: 20px;
+      grid-area: stats;
+      justify-self: end;
+      white-space: nowrap;
     }
 
     .grid {
       max-height: 180px;
       overflow-y: auto;
+    }
+
+    .queue-bulkactions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      grid-area: actions;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .queue-bulklabel {
+      font-size: 10px;
+      font-weight: 700;
+      color: #6b7280;
+      margin-right: 2px;
+    }
+
+    .queue-link-btn {
+      border: none;
+      background: #fff;
+      color: #4b5563;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+      border: 1px solid #dbe4ee;
+    }
+
+    .queue-link-btn:hover {
+      color: var(--brand-2);
+      border-color: #b6e7f7;
+      background: #f8fdff;
     }
 
     .grid::-webkit-scrollbar {
@@ -212,11 +261,25 @@
       background-position: center;
       background-color: #f3f4f6;
       flex-shrink: 0;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .thumb:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
     }
 
     .info {
       flex: 1;
       min-width: 0;
+    }
+
+    .card-topline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
     }
 
     .name {
@@ -231,6 +294,48 @@
       font-size: 10px;
       color: var(--muted);
       margin-top: 2px;
+    }
+
+    .item-bg-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 600;
+      color: #4b5563;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .item-bg-toggle input {
+      margin: 0;
+    }
+
+    .settings-hint {
+      display: block;
+      margin-top: 4px;
+      font-size: 10px;
+      color: #6b7280;
+    }
+
+    @media (max-width: 420px) {
+      .queue-header {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "title"
+          "actions"
+          "stats";
+        align-items: flex-start;
+      }
+
+      .queue-bulkactions {
+        justify-content: flex-start;
+      }
+
+      .queue-stats {
+        justify-self: start;
+      }
     }
 
     .bar {
@@ -578,6 +683,24 @@
       animation: slideUp 0.3s ease;
     }
 
+    .preview-modal-content {
+      width: 520px;
+      max-width: 95%;
+    }
+
+    .preview-modal-body {
+      padding: 14px;
+    }
+
+    .preview-modal-image {
+      display: block;
+      width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%);
+    }
+
     .modal-header {
       display: flex;
       justify-content: space-between;
@@ -710,13 +833,22 @@
         <input id="files" class="file-input" type="file" multiple accept="image/*">
       </div>
       <p style="font-size: 10px; color: #9ca3af; margin: 6px 0 0; text-align: center;" data-i18n="warning">
-        ?? Limit: 2MB per file, 60MB total. Larger files may cause errors.
+        Up to 30MB per file, no limit on the number of files. Images above 3 megapixels are scaled down automatically by Vectorizer.AI.
       </p>
 
       <!-- Queue -->
       <div class="queue-section">
         <div class="queue-header">
-          <span class="queue-title" data-i18n="queue">📋 Processing queue</span>
+          <div class="queue-header-main">
+            <span class="queue-title" data-i18n="queue">📋 Processing queue</span>
+          </div>
+          <div class="queue-bulkactions">
+            <span class="queue-bulklabel" data-i18n="bulkBackground">Remover fundo:</span>
+            <span class="info-btn" id="infoBtn" title="How does background removal work?"
+              data-i18n-title="howItWorks">?</span>
+            <button id="selectAllBgBtn" type="button" class="queue-link-btn" data-i18n="markAllBg">Todas</button>
+            <button id="clearAllBgBtn" type="button" class="queue-link-btn" data-i18n="clearAllBg">Nenhuma</button>
+          </div>
           <span id="queue-stats" class="queue-stats"></span>
         </div>
         <div id="grid" class="grid"></div>
@@ -772,18 +904,6 @@
 
         <!-- Divider -->
         <div style="border-top: 1px solid #e5e7eb; margin: 16px 0;"></div>
-
-        <!-- Remove Background -->
-        <div class="setting-item full" style="margin-bottom: 12px;">
-          <div style="display: flex; align-items: center;">
-            <label class="checkbox-item" style="flex: 1;">
-              <input type="checkbox" id="removeBackground">
-              <span data-i18n="removeBackground">🎨 Remove background</span>
-            </label>
-            <span class="info-btn" id="infoBtn" title="How does background removal work?"
-              data-i18n-title="howItWorks">?</span>
-          </div>
-        </div>
 
         <!-- Auto Pause -->
         <div class="setting-item full">
@@ -868,7 +988,20 @@
     </div>
   </div>
 
+  <div id="previewModal" class="modal-overlay">
+    <div class="modal-content preview-modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="previewModalTitle" data-i18n="imagePreview">Image preview</div>
+        <button id="closePreviewModal" class="modal-close">×</button>
+      </div>
+      <div class="modal-body preview-modal-body">
+        <img id="previewModalImage" class="preview-modal-image" alt="Preview">
+      </div>
+    </div>
+  </div>
+
   <script src="locales.js"></script>
+  <script src="filestore.js"></script>
   <script src="popup.js"></script>
 </body>
 

@@ -48,7 +48,28 @@ function checkPauseState() {
 }
 
 // Monitor for the rapid-fire error modal and automatically click retry
+function base64ToBytes(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+// Images above the site's resolution limit open the "Pre-Crop" dialog.
+// While the extension is processing, accept it so the site scales the image down itself.
+function acceptPreCropDialog() {
+  if (!overlayEl || shouldAbortProcessing) return;
+  const app = document.querySelector('#PreCrop-App');
+  if (!app || getComputedStyle(app).display === 'none') return;
+  const okBtn = app.querySelector('.PreCrop-Sidebar-crop_button');
+  if (okBtn && !okBtn.disabled) {
+    log('[acceptPreCropDialog] Pre-Crop dialog detected. Clicking Ok to let the site scale the image.');
+    okBtn.click();
+  }
+}
+
 function monitorErrorModal() {
+  setInterval(acceptPreCropDialog, 500);
   setInterval(() => {
     const errorDialog = document.querySelector('#App-Error-Dialog');
     const retryBtn = document.querySelector('#App-Error-RetryButton');
@@ -252,6 +273,11 @@ async function processFile(item, format = 'eps', meta = {}, removeBackground = f
     }
 
     log('[processFile] start', item.name, 'removeBackground:', removeBackground);
+    // The background sends the file as base64 (one file at a time, read from IndexedDB)
+    if (item.dataBase64) {
+      item.data = base64ToBytes(item.dataBase64);
+      delete item.dataBase64;
+    }
     showOverlay(item, meta);
     const file = new File([new Uint8Array(item.data)], item.name, { type: item.type });
 
@@ -370,7 +396,7 @@ async function processFile(item, format = 'eps', meta = {}, removeBackground = f
       log('[processFile] progress modal disappeared, image re-processed');
 
       // Busca o novo botão de download
-      await delay(500); // Pequeno delay para garantir que a UI atualizou
+      await delay(200); // Pequeno delay para garantir que a UI atualizou
       downloadBtn = document.querySelector('#App-DownloadLink');
       currentDownloadUrl = downloadBtn?.href || null;
       log('[processFile] download button after background removal:', currentDownloadUrl);
@@ -536,59 +562,40 @@ async function waitForProgressModalToDisappear(timeoutMs = 600000) {
     return false;
   };
 
-  // Primeiro: espera o modal APARECER (até 15 segundos - aumentado para imagens complexas)
-  let waitForAppear = 0;
-  while (!isModalVisible() && waitForAppear < 30) {
-    log('[waitForProgressModalToDisappear] waiting for modal to appear... (' + (waitForAppear * 0.5) + 's)');
-    await delay(500);
-    waitForAppear++;
-  }
-
-  if (!isModalVisible()) {
-    log('[waitForProgressModalToDisappear] modal never appeared, checking if processing anyway...');
-
-    // Mesmo que o modal não apareça, espera um pouco para garantir
-    // que o processamento teve tempo de começar
-    await delay(2000);
-
-    // Verifica se ainda está processando
-    let processingChecks = 0;
-    while (isProcessing() && processingChecks < 20) {
-      log('[waitForProgressModalToDisappear] processing detected without modal visible, waiting... (' + (processingChecks * 0.5) + 's)');
-      await delay(500);
-      processingChecks++;
-    }
-
-    log('[waitForProgressModalToDisappear] processing check complete, continuing...');
+  // Primeiro: espera o reprocessamento COMEÇAR (modal visível ou barras de progresso reiniciadas)
+  const started = await waitUntil(() => isModalVisible() || isProcessing(), 5000, 100);
+  if (!started) {
+    log('[waitForProgressModalToDisappear] processing never started, continuing...');
     return;
   }
 
-  log('[waitForProgressModalToDisappear] modal is visible, waiting for it to disappear...');
+  log('[waitForProgressModalToDisappear] processing started, waiting for it to finish...');
 
   // Depois: espera o modal DESAPARECER E o processamento terminar
-  let attempts = 0;
-  const maxAttempts = timeoutMs / 500;
+  const POLL_MS = 150;
+  const startedAt = Date.now();
+  let lastLog = startedAt;
 
-  while ((isModalVisible() || isProcessing()) && attempts < maxAttempts) {
-    await delay(500);
-    attempts++;
+  while ((isModalVisible() || isProcessing()) && Date.now() - startedAt < timeoutMs) {
+    if (shouldAbortProcessing) return;
+    await delay(POLL_MS);
 
-    if (attempts % 10 === 0) {
+    if (Date.now() - lastLog >= 5000) {
+      lastLog = Date.now();
       const processBar = document.querySelector('#App-Progress-Process-Bar');
       const processWidth = processBar ? parseFloat(processBar.style.width) || 0 : 0;
-      log('[waitForProgressModalToDisappear] still waiting... (' + (attempts * 0.5) + 's) - Process: ' + processWidth.toFixed(1) + '%');
+      log('[waitForProgressModalToDisappear] still waiting... (' + Math.round((Date.now() - startedAt) / 1000) + 's) - Process: ' + processWidth.toFixed(1) + '%');
     }
   }
 
-  if (attempts >= maxAttempts) {
+  if (Date.now() - startedAt >= timeoutMs) {
     log('[waitForProgressModalToDisappear] timeout reached');
   } else {
-    log('[waitForProgressModalToDisappear] modal disappeared and processing complete after', attempts * 0.5, 'seconds');
+    log('[waitForProgressModalToDisappear] processing complete after', Math.round((Date.now() - startedAt) / 100) / 10, 'seconds');
   }
 
-  // Aguarda mais 1 segundo para garantir que a UI atualizou completamente
-  log('[waitForProgressModalToDisappear] waiting additional 1s for UI to update...');
-  await delay(1000);
+  // Pequena folga para a UI atualizar o link de download
+  await delay(300);
 }
 
 async function clickOptionsSubmitAfterDelay(itemName, downloadUrl, format = 'eps') {
@@ -596,8 +603,8 @@ async function clickOptionsSubmitAfterDelay(itemName, downloadUrl, format = 'eps
     const btn = await waitForOptionsSubmit(15000);
     if (!btn) return;
     selectFormatRadio(format);
-    log('[clickOptionsSubmitAfterDelay] found confirm button, waiting 5s then click');
-    await delay(5000);
+    log('[clickOptionsSubmitAfterDelay] found confirm button, waiting 1.5s then click');
+    await delay(1500);
     btn.click();
     log('[clickOptionsSubmitAfterDelay] clicked confirm button');
   } catch (_) {
@@ -626,6 +633,17 @@ function waitForOptionsSubmit(timeoutMs = 10000) {
 }
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Polls until check() returns something truthy (or the timeout ends) instead of sleeping a fixed time.
+async function waitUntil(check, timeoutMs = 5000, intervalMs = 100) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const value = check();
+    if (value) return value;
+    await delay(intervalMs);
+  }
+  return check() || null;
+}
 
 function findDownloadConfirmButton() {
   const byId = document.querySelector('#Options-Submit');
@@ -1298,8 +1316,12 @@ async function clickPaletteButton(imageWidth = 0, imageHeight = 0) {
     paletteBtn.click();
 
     // Aguarda o modal de paleta abrir
-    log('[clickPaletteButton] waiting 5s for palette modal to open...');
-    await delay(5000);
+    log('[clickPaletteButton] waiting for palette editor canvas...');
+    await waitUntil(() => {
+      const c = document.querySelector('#App-SubApps-View canvas');
+      return c && c.getBoundingClientRect().width > 50 ? c : null;
+    }, 8000);
+    await delay(300);
 
     // Passo 2: Clica no canvas na posição (30, 30) relativa à imagem
     log('[clickPaletteButton] step 2 - clicking on canvas at image position (30, 30)...');
@@ -1311,7 +1333,7 @@ async function clickPaletteButton(imageWidth = 0, imageHeight = 0) {
 
     // Aguarda a cor ser selecionada
     log('[clickPaletteButton] waiting after canvas click...');
-    await delay(1500);
+    await delay(300);
 
     // Passo 3: Desmarca o checkbox para excluir a cor do resultado
     const includeCheckbox = document.querySelector('#App-SubApps-Palette-ColorEditor-IncludeInput');
@@ -1321,7 +1343,7 @@ async function clickPaletteButton(imageWidth = 0, imageHeight = 0) {
       if (includeCheckbox.checked) {
         log('[clickPaletteButton] step 3 - unchecking checkbox to exclude color');
         includeCheckbox.click();
-        await delay(1000);
+        await delay(250);
       } else {
         log('[clickPaletteButton] step 3 - checkbox already unchecked');
       }
@@ -1337,7 +1359,7 @@ async function clickPaletteButton(imageWidth = 0, imageHeight = 0) {
     if (acceptBtn) {
       log('[clickPaletteButton] step 4 - clicking color editor accept button');
       acceptBtn.click();
-      await delay(1000);
+      await delay(250);
     } else {
       log('[clickPaletteButton] step 4 - color editor accept button NOT FOUND, ABORTING');
       return false;
@@ -1354,8 +1376,7 @@ async function clickPaletteButton(imageWidth = 0, imageHeight = 0) {
       await simulateRealClick(toolbarAcceptBtn);
 
       // Aguarda 2 segundos após clicar
-      log('[clickPaletteButton] waiting 2 seconds after toolbar accept click...');
-      await delay(2000);
+      await delay(300);
 
       log('[clickPaletteButton] background removal completed successfully');
       return true;
@@ -1400,24 +1421,20 @@ async function simulateRealClick(element) {
 
     // Foca no elemento primeiro
     element.focus();
-    await delay(50);
 
     // Dispara eventos de pointer
     element.dispatchEvent(new PointerEvent('pointerenter', eventProps));
     element.dispatchEvent(new PointerEvent('pointerover', eventProps));
-    await delay(50);
 
     element.dispatchEvent(new PointerEvent('pointerdown', eventProps));
-    await delay(100);
+    await delay(30);
 
     element.dispatchEvent(new PointerEvent('pointerup', eventProps));
-    await delay(50);
 
     // Dispara eventos de mouse
     element.dispatchEvent(new MouseEvent('mouseenter', eventProps));
     element.dispatchEvent(new MouseEvent('mouseover', eventProps));
     element.dispatchEvent(new MouseEvent('mousedown', eventProps));
-    await delay(50);
     element.dispatchEvent(new MouseEvent('mouseup', eventProps));
     element.dispatchEvent(new MouseEvent('click', eventProps));
 
@@ -1536,13 +1553,11 @@ async function findAndClickBackgroundColor(imageWidth = 0, imageHeight = 0) {
 
       canvas.dispatchEvent(new PointerEvent('pointerenter', eventProps));
       canvas.dispatchEvent(new PointerEvent('pointerover', eventProps));
-      await delay(50);
 
       canvas.dispatchEvent(new PointerEvent('pointerdown', eventProps));
-      await delay(100);
+      await delay(30);
 
       canvas.dispatchEvent(new PointerEvent('pointerup', eventProps));
-      await delay(50);
 
       canvas.dispatchEvent(new PointerEvent('click', eventProps));
 
@@ -1557,13 +1572,11 @@ async function findAndClickBackgroundColor(imageWidth = 0, imageHeight = 0) {
 
       canvas.dispatchEvent(new MouseEvent('mouseenter', eventProps));
       canvas.dispatchEvent(new MouseEvent('mouseover', eventProps));
-      await delay(50);
 
       canvas.dispatchEvent(new MouseEvent('mousedown', eventProps));
-      await delay(100);
+      await delay(30);
 
       canvas.dispatchEvent(new MouseEvent('mouseup', eventProps));
-      await delay(50);
 
       canvas.dispatchEvent(new MouseEvent('click', eventProps));
 

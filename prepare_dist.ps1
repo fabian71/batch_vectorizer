@@ -40,6 +40,7 @@ $filesToCopy = @(
     "icons",
     "assets",
     "locales.js",
+    "filestore.js",
     "content.js",
     "INSTALLATION.md",
     "README.md"
